@@ -31,7 +31,6 @@ from neon_utils.skills.neon_skill import NeonSkill, LOG
 from mycroft.skills.core import intent_file_handler
 from .request_handling import RequestHandler
 
-import os
 
 
 class DirectorySkill(NeonSkill):
@@ -51,20 +50,28 @@ class DirectorySkill(NeonSkill):
         self._start_mall_parser_prompt(message)
         return
 
+    def mall_link(self):
+        mall_link = 'https://www.alamoanacenter.com/'
+        return self.settings.get("mall_link") or mall_link
+
     def start_again(self, message):
         start_again = self.ask_yesno("ask_more")
         if start_again == "yes":
             self._start_mall_parser_prompt(self, message)
+        else:
+            self.speak_dialog('finished')
 
     def user_request_handling(self, message):
         tries = 0
         LOG.info(f"Message is {message.data}")
         request_lang = message.data['lang'].split('-')[0]
-        mall_link = message.data['mall_link']
-        user_request = message.data['utterance']
+        user_request = message.data['shop']
+        LOG.info(f"{self.mall_link()}")
+        LOG.info(str(request_lang))
+        LOG.info(user_request)
         while tries <= 3:
-            if RequestHandler.existing_lang_check(request_lang, mall_link):
-                return user_request, mall_link
+            if RequestHandler.existing_lang_check(request_lang, self.mall_link()):
+                return user_request, self.mall_link()
             else:
                 self.speak_dialog("no_lang")
                 user_request = self.get_response("repeat")
@@ -72,39 +79,49 @@ class DirectorySkill(NeonSkill):
             return None, None
 
     def find_shop(self, user_request, mall_link):
-        count = 0
-        while count != 3:
-            if user_request is not None:
-                self.speak_dialog(f"I am parsing shops and malls for your request")
-                shop_info = RequestHandler.get_shop_data(mall_link, user_request)
-                if shop_info is []:
-                    self.speak_dialog("shop_not_found")
-                    user_request = self.get_response("repeat")
-                    self.find_shop(user_request, mall_link)
-                    count += 1
-                elif len(shop_info) > 1:
-                    shop_names = [shop['name'] for shop in shop_info]
-                    selected_shop = self.ask_selection(shop_names, 'more_than_one')
-                    if selected_shop is not None:
-                        selected_shop_info = [shop for shop in shop_info if selected_shop in shop['name']]
-                        shop_str_info = f"{selected_shop_info['name']} {selected_shop_info['hours']} {selected_shop_info['location']}"
-                        self.speak(shop_str_info)
-                else:
-                    shop_str_info = f"{shop_info['name']} {shop_info['hours']} {shop_info['location']}"
+        if user_request is not None:
+            self.speak_dialog(f"I am parsing shops and malls for your request")
+            shop_info = RequestHandler.get_shop_data(mall_link, user_request)
+            if len(shop_info) == 0:
+                self.speak_dialog("shop_not_found")
+                user_request = self.get_response('repeat')
+                return 1, user_request
+            elif len(shop_info) > 1:
+                shop_names = [shop['name'] for shop in shop_info]
+                selected_shop = self.ask_selection(shop_names, 'more_than_one')
+                if selected_shop is not None:
+                    selected_shop_info = [shop for shop in shop_info if selected_shop in shop['name']]
+                    LOG.info(f"{selected_shop_info}")
+                    shop_str_info = f"{selected_shop_info['name']} {selected_shop_info['hours']} {selected_shop_info['location']}"
                     self.speak(shop_str_info)
+                return 3, None
+            else:
+                LOG.info(f"found shop {shop_info}")
+                shop_str_info = f"{shop_info[0]['name']} {shop_info[0]['hours']} {shop_info[0]['location']}"
+                self.speak(shop_str_info)
+                return 3, None
         else:
-            self.speak_dialog('finish')
+            self.speak_dialog('finished')
+            return 3
 
     def execute(self, message):
-        user_request, mall_link = self.user_request_handling(message)
-        self.find_shop(user_request, mall_link)
-        self.start_again(message)
+        if message is not None:
+            user_request, mall_link = self.user_request_handling(message)
+            count = 0
+            while count < 3:
+                LOG.info(str(user_request))
+                LOG.info(str(mall_link))
+                new_count, user_request = self.find_shop(user_request, mall_link)
+                count = count+ new_count
+            self.start_again(message)
+        else:
+            self.speak_dialog('finished')
 
     def _start_mall_parser_prompt(self, message):
         if self.neon_in_request(message):
             LOG.info('Prompting Mall parsing start')
             self.make_active()
-            start_parsing = self.ask_yesno("start")
+            start_parsing = self.ask_yesno("start mall parsing?")
             if start_parsing == "yes":
                 self.execute(message)
                 return
