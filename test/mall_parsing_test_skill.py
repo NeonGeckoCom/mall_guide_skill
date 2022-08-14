@@ -82,22 +82,24 @@ class TestSkill(unittest.TestCase):
         real_execute = self.skill.execute
         real_user_request_handling = self.skill.user_request_handling
         self.skill.ask_yesno = Mock(return_value="yes")
-        self.skill.execute = Mock()
-        self.skill.user_request_handling = Mock()
+        #self.skill.execute = Mock()
+        #self.skill.user_request_handling = Mock()
         self.skill._start_mall_parser_prompt(
-            Message('test', {'utterance': 'start mall parsing',
-                                'lang': 'en-us',
-                                'mall_link': "https://www.alamoanacenter.com/"},
+            Message('test', {'utterance': 'where is apple',
+                                'shop': 'apple',
+                                'lang': 'en-us'
+                                },
                             {'context_key': 'MallParsing'}))
         self.skill.execute.assert_called_once()
 
-        message = Message('test', {'utterance': 'start mall parsing',
+        message = Message('test', {'utterance': 'where is apple',
+                                   'shop': 'apple',
                                    'lang': 'en-us'},
-                          {'context_key': 'Instructions'})
+                          {'context_key': 'MallParsing'})
+        
         self.skill.user_request_handling(message)
-        self.skill.ask_yesno.assert_called_once_with("start")
+        #self.skill.ask_yesno.assert_called_once_with("start mall parsing?")
         self.skill.execute(message)
-
         self.skill.execute = real_execute
         self.skill.ask_yesno = real_askyesno
         self.skill.user_request_handling = real_user_request_handling
@@ -105,4 +107,4 @@ class TestSkill(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    pytest.main()
+    unittest.main()

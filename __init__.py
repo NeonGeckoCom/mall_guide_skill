@@ -54,84 +54,89 @@ class DirectorySkill(NeonSkill):
         mall_link = 'https://www.alamoanacenter.com/'
         return self.settings.get("mall_link") or mall_link
 
-    def start_again(self, message):
-        start_again = self.ask_yesno("ask_more")
-        if start_again == "yes":
-            self._start_mall_parser_prompt(self, message)
-        else:
-            self.speak_dialog('finished')
-
     def user_request_handling(self, message):
-        tries = 0
         LOG.info(f"Message is {message.data}")
         request_lang = message.data['lang'].split('-')[0]
         user_request = message.data['shop']
         LOG.info(f"{self.mall_link()}")
         LOG.info(str(request_lang))
         LOG.info(user_request)
-        while tries <= 3:
-            if RequestHandler.existing_lang_check(request_lang, self.mall_link()):
-                return user_request, self.mall_link()
-            else:
-                self.speak_dialog("no_lang")
-                user_request = self.get_response("repeat")
+        found, link = RequestHandler.existing_lang_check(request_lang, self.mall_link())
+        if found:
+            link = self.mall_link()+request_lang+'/directory/'
+            LOG.info('new link: '+ link)
+            return user_request, link
         else:
+            self.speak_dialog("no_lang")
             return None, None
+
+    def start_again(self):
+        start_again = self.ask_yesno("ask_more")
+        if start_again == "yes":
+            another_shop = self.get_response('another_shop')
+            LOG.info('another shop'+another_shop)
+            return another_shop
+        elif start_again == "no":
+            return None
+        else:
+            self.speak_dialog('unexpected_error')
+            return None
 
     def find_shop(self, user_request, mall_link):
         if user_request is not None:
+            request_handler = RequestHandler()
             self.speak_dialog(f"I am parsing shops and malls for your request")
-            shop_info = RequestHandler.get_shop_data(mall_link, user_request)
+            shop_info = request_handler.get_shop_data(mall_link, user_request)
             if len(shop_info) == 0:
                 self.speak_dialog("shop_not_found")
                 user_request = self.get_response('repeat')
                 return 1, user_request
             elif len(shop_info) > 1:
-                shop_names = [shop['name'] for shop in shop_info]
-                selected_shop = self.ask_selection(shop_names, 'more_than_one')
-                if selected_shop is not None:
-                    selected_shop_info = [shop for shop in shop_info if selected_shop in shop['name']]
-                    LOG.info(f"{selected_shop_info}")
-                    shop_str_info = f"{selected_shop_info['name']} {selected_shop_info['hours']} {selected_shop_info['location']}"
-                    self.speak(shop_str_info)
+                self.speak_dialog('more_than_one')
+                for shop in shop_info:
+                    shop_str = 'found shop %s work hours are %s you can find this store on %s' % (shop['name'], shop['hours'], shop['location'])
+                    self.speak(f"found shop {shop['name']} work hours are {shop['hours']} you can find this store on {shop['location']}")
                 return 3, None
             else:
                 LOG.info(f"found shop {shop_info}")
-                shop_str_info = f"{shop_info[0]['name']} {shop_info[0]['hours']} {shop_info[0]['location']}"
-                self.speak(shop_str_info)
+                self.speak(f"found shop {shop_info[0]['name']} work hours are {shop_info[0]['hours']} you can find this store on {shop_info[0]['location']}")
                 return 3, None
         else:
-            self.speak_dialog('finished')
-            return 3
+            return 3, None
 
-    def execute(self, message):
-        if message is not None:
-            user_request, mall_link = self.user_request_handling(message)
-            count = 0
-            while count < 3:
-                LOG.info(str(user_request))
-                LOG.info(str(mall_link))
-                new_count, user_request = self.find_shop(user_request, mall_link)
-                count = count+ new_count
-            self.start_again(message)
+    def execute(self, user_request, mall_link):
+        count = 0
+        user_request = user_request
+        LOG.info('Start execute')
+        while count < 3:
+            LOG.info(str(user_request))
+            LOG.info(str(mall_link))
+            new_count, user_request = self.find_shop(user_request, mall_link)
+            count = count + new_count
+        user_request = self.start_again()
+        LOG.info(str(user_request))
+        if user_request is not None:
+            LOG.info('New execution')
+            self.execute(user_request, mall_link)
         else:
-            self.speak_dialog('finished')
+            return None
 
     def _start_mall_parser_prompt(self, message):
-        if self.neon_in_request(message):
             LOG.info('Prompting Mall parsing start')
             self.make_active()
-            start_parsing = self.ask_yesno("start mall parsing?")
-            if start_parsing == "yes":
-                self.execute(message)
-                return
-            else:
-                repeat_instr = self.ask_yesno("stop")
-                if repeat_instr == 'yes':
-                    self.speak_dialog('finished')
+            if message is not None:
+                LOG.info('new message'+str(message))
+                user_request, mall_link = self.user_request_handling(message)
+                LOG.info(mall_link)
+                if user_request is not None:
+                    if self.execute(user_request, mall_link) is not None:
+                        LOG.info('executed')
+                        return
+                    else:
+                        self.speak_dialog('finished')
                 else:
-                    self.execute(message)
-                    return
+                    self.speak_dialog('finished')
+            
 
 
 def create_skill():

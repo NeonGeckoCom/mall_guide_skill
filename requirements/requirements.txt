@@ -1,4 +1,5 @@
 numpy
 neon_utils>=0.17,<2.0.0
-requests
 bs4
+urllib
+requests
