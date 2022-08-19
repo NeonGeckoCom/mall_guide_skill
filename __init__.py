@@ -37,6 +37,9 @@ class DirectorySkill(NeonSkill):
 
     def __init__(self):
         super(DirectorySkill, self).__init__(name="DirectorySkill")
+        self.request_handler = RequestHandler()
+        self.cache = dict()
+
 
     def initialize(self):
         # When first run or prompt not dismissed, wait for load and prompt user
@@ -50,6 +53,7 @@ class DirectorySkill(NeonSkill):
         self._start_mall_parser_prompt(message)
         return
 
+    # @property
     def mall_link(self):
         mall_link = 'https://www.alamoanacenter.com/'
         return self.settings.get("mall_link") or mall_link
@@ -74,34 +78,64 @@ class DirectorySkill(NeonSkill):
         start_again = self.ask_yesno("ask_more")
         if start_again == "yes":
             another_shop = self.get_response('another_shop')
-            LOG.info('another shop'+another_shop)
-            return another_shop
+            if another_shop is not None:
+                LOG.info('another shop'+another_shop)
+                return another_shop
+            else:
+                return None
         elif start_again == "no":
+            self.speak_dialog('no_shop_request')
             return None
         else:
             self.speak_dialog('unexpected_error')
             return None
 
+    def speak_shops(self, shop_info):
+        for shop in shop_info:
+            LOG.info(shop)
+            location = self.request_handler.location_format(shop['location'])
+            self.speak_dialog('found_shop', {"name": shop['name'], "hours": shop['hours'], "location": location})
+            self.gui.show_image(shop['logo'])
+        return 3, None
+
+    def more_than_one(self, shop_info):
+        self.speak_dialog('more_than_one')
+        speak_all_shops = self.ask_yesno('speak_all_shops')
+        if speak_all_shops == 'yes':
+            self.speak_dialog('all_locations')
+            return self.speak_shops(shop_info)
+        else:
+            shop_by_floor = self.ask_yesno('shop_by_floor')
+            if shop_by_floor == 'yes':
+                floor = self.get_response('which_floor')
+                shop = self.request_handler.shop_selection_by_floors(floor, shop_info)
+                if shop is not None:
+                    return self.speak_shops([shop])
+                else:
+                    self.speak_dialog('no_shop_on_level')
+                    return self.speak_shops(shop_info)
+            else:
+                self.speak_dialog('all_locations')
+                return self.speak_shops(shop_info)
+
     def find_shop(self, user_request, mall_link):
+        LOG.info(str(user_request))
+        LOG.info(str(mall_link))
         if user_request is not None:
-            request_handler = RequestHandler()
             self.speak_dialog(f"I am parsing shops and malls for your request")
-            shop_info = request_handler.get_shop_data(mall_link, user_request)
+            LOG.info(f"I am parsing shops and malls for your request")
+            shop_info = self.request_handler.get_shop_data(mall_link, user_request, self.cache)
             if len(shop_info) == 0:
                 self.speak_dialog("shop_not_found")
                 user_request = self.get_response('repeat')
                 return 1, user_request
             elif len(shop_info) > 1:
-                self.speak_dialog('more_than_one')
-                for shop in shop_info:
-                    shop_str = 'found shop %s work hours are %s you can find this store on %s' % (shop['name'], shop['hours'], shop['location'])
-                    self.speak(f"found shop {shop['name']} work hours are {shop['hours']} you can find this store on {shop['location']}")
-                return 3, None
+                return self.more_than_one(shop_info)
             else:
                 LOG.info(f"found shop {shop_info}")
-                self.speak(f"found shop {shop_info[0]['name']} work hours are {shop_info[0]['hours']} you can find this store on {shop_info[0]['location']}")
-                return 3, None
+                return self.speak_shops(shop_info)
         else:
+            LOG.info(str(None))
             return 3, None
 
     def execute(self, user_request, mall_link):

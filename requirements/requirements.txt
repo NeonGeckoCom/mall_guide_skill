@@ -1,5 +1,6 @@
 numpy
-neon_utils>=0.17,<2.0.0
+neon-utils~=1.0
 bs4
 urllib
 requests
+ovos-lingua-franca

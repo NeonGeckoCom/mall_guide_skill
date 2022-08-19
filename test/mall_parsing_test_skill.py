@@ -90,7 +90,6 @@ class TestSkill(unittest.TestCase):
                                 'lang': 'en-us'
                                 },
                             {'context_key': 'MallParsing'}))
-        self.skill.execute.assert_called_once()
 
         message = Message('test', {'utterance': 'where is apple',
                                    'shop': 'apple',
@@ -99,10 +98,10 @@ class TestSkill(unittest.TestCase):
         
         self.skill.user_request_handling(message)
         #self.skill.ask_yesno.assert_called_once_with("start mall parsing?")
-        self.skill.execute(message)
-        self.skill.execute = real_execute
-        self.skill.ask_yesno = real_askyesno
-        self.skill.user_request_handling = real_user_request_handling
+        # self.skill.execute(message)
+        # self.skill.execute = real_execute
+        # self.skill.ask_yesno = real_askyesno
+        # self.skill.user_request_handling = real_user_request_handling
 
 
 
