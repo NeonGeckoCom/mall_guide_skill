@@ -14,8 +14,7 @@
             "neon-utils~=1.0",
             "numpy",
             "ovos-lingua-franca",
-            "requests",
-            "urllib"
+            "requests"
         ],
         "system": {},
         "skill": []
