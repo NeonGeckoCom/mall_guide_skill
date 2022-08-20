@@ -28,7 +28,6 @@
 
 import shutil
 import unittest
-import pytest
 
 from os import mkdir
 from os.path import dirname, join, exists
@@ -78,12 +77,7 @@ class TestSkill(unittest.TestCase):
         shutil.rmtree(cls.test_fs)
 
     def test_en_skill_init(self):
-        real_askyesno = self.skill.ask_yesno
-        real_execute = self.skill.execute
-        real_user_request_handling = self.skill.user_request_handling
         self.skill.ask_yesno = Mock(return_value="yes")
-        #self.skill.execute = Mock()
-        #self.skill.user_request_handling = Mock()
         self.skill._start_mall_parser_prompt(
             Message('test', {'utterance': 'where is apple',
                                 'shop': 'apple',
@@ -97,11 +91,6 @@ class TestSkill(unittest.TestCase):
                           {'context_key': 'MallParsing'})
         
         self.skill.user_request_handling(message)
-        #self.skill.ask_yesno.assert_called_once_with("start mall parsing?")
-        # self.skill.execute(message)
-        # self.skill.execute = real_execute
-        # self.skill.ask_yesno = real_askyesno
-        # self.skill.user_request_handling = real_user_request_handling
 
 
 

@@ -79,7 +79,7 @@ class DirectorySkill(NeonSkill):
         if start_again == "yes":
             another_shop = self.get_response('another_shop')
             if another_shop is not None:
-                LOG.info('another shop'+another_shop)
+                LOG.info(f'another shop {another_shop}')
                 return another_shop
             else:
                 return None
