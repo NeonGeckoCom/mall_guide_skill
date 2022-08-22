@@ -95,7 +95,7 @@ class DirectorySkill(NeonSkill):
             LOG.info(shop)
             location = self.request_handler.location_format(shop['location'])
             self.speak_dialog('found_shop', {"name": shop['name'], "hours": shop['hours'], "location": location})
-            self.gui.show_image(shop['logo'])
+            # self.gui.show_image(shop['logo'])
         return 3, None
 
     def more_than_one(self, shop_info):

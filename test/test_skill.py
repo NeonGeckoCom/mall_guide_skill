@@ -78,6 +78,7 @@ class TestSkill(unittest.TestCase):
 
     def test_en_skill_init(self):
         self.skill.ask_yesno = Mock(return_value="yes")
+        self.skill.gui._pages2uri = Mock()
         self.skill._start_mall_parser_prompt(
             Message('test', {'utterance': 'where is apple',
                                 'shop': 'apple',
