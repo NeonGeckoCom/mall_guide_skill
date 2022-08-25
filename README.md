@@ -6,7 +6,8 @@ Skill for mall parsing
 {Skill parses mall web page and returns user name, location and work hours of requested shop/store}
 
 ## Examples
-{Where is apple? Where can I find ABC stores?}
+{- where is apple?
+- where can I find ABC stores?}
 
 ## Contact Support
 Use the [link](https://neongecko.com/ContactUs) or [submit an issue on GitHub](https://help.github.com/en/articles/creating-an-issue)
@@ -17,7 +18,7 @@ Use the [link](https://neongecko.com/ContactUs) or [submit an issue on GitHub](h
 {author_name}
 
 ## Category
-**category** {categories}
+**Information** {categories}
 
 ## Tags
 #tag

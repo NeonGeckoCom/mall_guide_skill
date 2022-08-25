@@ -1,1 +1,1 @@
-found shop {{name}} work hours are {{hours}} you can find this store on {{location}}
+I found shop {{name}} with hours of {{hours}}. You can find this store on {{location}}.
