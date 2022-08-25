@@ -3,7 +3,7 @@
 Skill for mall parsing
 
 ## Description
-{Skill parses mall web page and returns user name, location and work hours of requested shop/store}
+{Skill parses mall web page and returns user name, location and work hours of requested shop, store}
 
 ## Examples
 {- where is apple?
@@ -15,7 +15,7 @@ Use the [link](https://neongecko.com/ContactUs) or [submit an issue on GitHub](h
 ## Credits
 
 [NeonGeckoCom](https://github.com/NeonGeckoCom)
-{author_name}
+[NeonMariia](https://github.com/neonmariia)
 
 ## Category
 **Information** {categories}
