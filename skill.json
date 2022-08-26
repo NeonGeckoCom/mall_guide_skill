@@ -1,11 +1,12 @@
 {
-    "title": "{title}",
+    "title": "{Malls parser skill neon}",
     "url": "https://github.com/NeonGeckoCom/malls-parser-skill",
     "summary": "Skill for mall parsing",
     "short_description": "Skill for mall parsing",
-    "description": "{Skill parses mall web page and returns user name, location and work hours of requested shop, store}",
+    "description": "Skill parses mall web page and returns user name, location and work hours of requested shop, store",
     "examples": [
-        "where can i find abc stores?}"
+        "where is apple?",
+        "where can i find abc stores?"
     ],
     "desktopFile": false,
     "warning": "",
@@ -32,14 +33,11 @@
     "branch": "master",
     "license": "BSD-3-Clause",
     "icon": "https://0000.us/klatchat/app/files/neon_images/icons/neon_skill.png",
-    "category": "Information** {categories}",
+    "category": "Information",
     "categories": [
-        "Information** {categories}"
+        "Information"
     ],
-    "tags": [
-        "tag",
-        "tag2"
-    ],
+    "tags": [],
     "credits": [
         "NeonGeckoCom",
         "NeonMariia"
