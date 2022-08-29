@@ -30,6 +30,7 @@
 from neon_utils.skills.neon_skill import NeonSkill, LOG
 from mycroft.skills.core import intent_file_handler
 from .request_handling import RequestHandler
+import re
 
 
 
@@ -94,8 +95,10 @@ class DirectorySkill(NeonSkill):
         for shop in shop_info:
             LOG.info(shop)
             location = self.request_handler.location_format(shop['location'])
-            self.speak_dialog('found_shop', {"name": shop['name'], "hours": shop['hours'], "location": location})
-            # self.gui.show_image(shop['logo'])
+            hours = re.sub('(\d+)am(.+\d)pm', r'\1 A M\2 P M', shop['hours'])
+            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location})
+            print({"name": shop['name'], "hours": hours, "location": location})
+            #self.gui.show_image(shop['logo'])
         return 3, None
 
     def more_than_one(self, shop_info):
