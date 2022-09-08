@@ -29,10 +29,10 @@
 from setuptools import setup
 from os import getenv, path, walk
 
-SKILL_NAME = "malls-parser-skill"
+SKILL_NAME = "skill-directory"
 SKILL_PKG = SKILL_NAME.replace('-', '_')
 # skill_id=package_name:SkillClass
-PLUGIN_ENTRY_POINT = f'{SKILL_NAME}.neongeckocom={SKILL_PKG}:MallParsingSkill'
+PLUGIN_ENTRY_POINT = f'{SKILL_NAME}.neongeckocom={SKILL_PKG}:DirectorySkill'
 
 
 def get_requirements(requirements_filename: str):
