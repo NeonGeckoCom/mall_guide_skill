@@ -1,0 +1,9 @@
+
+skillMetadata:
+  sections:
+    - name: Mall Parsing
+      fields:
+        - name: prompt_on_start
+          type: checkbox
+          label: Start Mall Parsing
+          value: "true"
