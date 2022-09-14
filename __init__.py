@@ -26,12 +26,12 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-from neon_utils.skills.neon_skill import NeonSkill, LOG
-from mycroft.skills.core import intent_file_handler
-from .request_handling import RequestHandler
 import re
 
+from mycroft.skills.core import intent_file_handler
+from neon_utils.skills.neon_skill import LOG, NeonSkill
+
+from .request_handling import RequestHandler
 
 
 class DirectorySkill(NeonSkill):
@@ -39,7 +39,7 @@ class DirectorySkill(NeonSkill):
     def __init__(self):
         super(DirectorySkill, self).__init__(name="DirectorySkill")
         self.request_handler = RequestHandler()
-        self.cache = dict()
+        self.from_hashed_stores = []
 
 
     def initialize(self):
@@ -95,9 +95,11 @@ class DirectorySkill(NeonSkill):
         for shop in shop_info:
             LOG.info(shop)
             location = self.request_handler.location_format(shop['location'])
+            #add pronounce_number
             hours = re.sub('(\d+)am(.+\d)pm', r'\1 A M\2 P M', shop['hours'])
             self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location})
-            print({"name": shop['name'], "hours": hours, "location": location})
+            self.speak_dialog({"name": shop['name'], "hours": hours, "location": location})
+            self.time_calculation(self, hours, shop['name'])
             #self.gui.show_image(shop['logo'])
         return 3, None
 
@@ -121,13 +123,53 @@ class DirectorySkill(NeonSkill):
                 self.speak_dialog('all_locations')
                 return self.speak_shops(shop_info)
 
+    def time_calculation(self, work_time, shop_name):
+        # add logic if shop opens and closes not at am-pm time period
+        """
+        Calculates time difference between user's current time 
+        and shop working hours. Returns certain prompt.
+        If user is before opening speaks how much time 
+        is left for waiting.
+        If shop closes in one hour speaks how many minutes left.
+        If user in open hours, tells that shop is open.
+        If user after closing hour, tells that shop is closed,
+        tells opening time.
+        Args:
+            work_time (str): work hours from found shop data
+            shop_name (str): shop name from found shop data
+                
+        Examples:
+            work time 9am-10pm
+            user's time 8am
+            Ptompt: 'Shop is closed now. Opens in 1 hour'
+        """
+        day_time, hour, min = self.request_handler.curent_time_extraction()
+        parse_time = work_time.split('-')
+        open_time = int(re.sub('[^\d+]', '',parse_time[0]))
+        close_time = int(re.sub('[^\d+]', '',parse_time[1]))
+        # time left
+        wait_h = open_time-hour-1
+        wait_min = 60-min
+        if day_time[1]=='am' and hour<open_time:
+            self.speak(f'{shop_name} is closed now. Opens in {wait_h} hour and {wait_min} minutes')
+        elif day_time[1]=='pm' and close_time-hour <= 1:
+            self.speak(f'{shop_name} closes in {wait_min} minutes')
+        elif hour>open_time and hour<close_time:
+            self.speak(f'{shop_name} is open now.')
+        elif hour>=close_time:
+            self.speak(f'{shop_name} is closed now. Shop opens at {open_time}')
+        else:
+            # change this else variant
+            self.speak_dialog(f'{shop_name} is open now.')
+
+    
     def find_shop(self, user_request, mall_link):
         LOG.info(str(user_request))
         LOG.info(str(mall_link))
         if user_request is not None:
-            self.speak_dialog(f"I am parsing shops and malls for your request")
-            LOG.info(f"I am parsing shops and malls for your request")
-            shop_info = self.request_handler.get_shop_data(mall_link, user_request, self.cache)
+            self.speak_dialog(f"I am parsing shops and malls in your request")
+            LOG.info(f"I am parsing shops and malls in your request")
+            shop_info = self.request_handler.get_shop_data(mall_link, user_request)
             if len(shop_info) == 0:
                 self.speak_dialog("shop_not_found")
                 user_request = self.get_response('repeat')
@@ -150,6 +192,7 @@ class DirectorySkill(NeonSkill):
             LOG.info(str(mall_link))
             new_count, user_request = self.find_shop(user_request, mall_link)
             count = count + new_count
+        # here is some logic problem (big pause after 3 tries)
         user_request = self.start_again()
         LOG.info(str(user_request))
         if user_request is not None:
