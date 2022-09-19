@@ -38,6 +38,7 @@ from lingua_franca.format import pronounce_number
 lingua_franca.load_language('en')
 
 import re
+import os
 from os import path
 import json
 
@@ -100,7 +101,11 @@ class RequestHandler():
             ]}
         """
         if data == {}:
-            data = {store_info['name']: store_info}
+            for store in store_info:
+                data = {store['name']: store}
+                if data != {}:
+                    new_store = {store['name']: store}
+                    data.update(new_store)
         else:
             new_store = {store_info['name']: store_info}
             data.update(new_store)
