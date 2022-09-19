@@ -14,10 +14,13 @@
     "requirements": {
         "python": [
             "bs4",
+            "datetime",
             "neon-utils~=1.0",
             "numpy",
             "ovos-lingua-franca",
-            "requests"
+            "pytz",
+            "requests",
+            "urllib"
         ],
         "system": {},
         "skill": []
