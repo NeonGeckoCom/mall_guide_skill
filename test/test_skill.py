@@ -80,18 +80,19 @@ class TestSkill(unittest.TestCase):
         self.skill.ask_yesno = Mock(return_value="yes")
         self.skill.gui._pages2uri = Mock()
         self.skill._start_mall_parser_prompt(
-            Message('test', {'utterance': 'where is apple',
-                                'shop': 'apple',
+            Message('test', {'utterance': 'find Apple',
+                                'shop': 'Apple',
                                 'lang': 'en-us'
                                 },
                             {'context_key': 'MallParsing'}))
 
-        message = Message('test', {'utterance': 'where is apple',
-                                   'shop': 'apple',
-                                   'lang': 'en-us'},
-                          {'context_key': 'MallParsing'})
+
+        # message = Message('test', {'utterance': 'find ABC stores',
+        #                            'shop': 'ABC stores',
+        #                            'lang': 'en-us'},
+        #                   {'context_key': 'MallParsing'})
         
-        self.skill.user_request_handling(message)
+        # self.skill.user_request_handling(message)
 
 
 

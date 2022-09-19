@@ -67,20 +67,29 @@ class RequestHandler():
             {"name": "ABS stores", "time": "8am-10pm", "location": "2 level"}
             ]
         """
-        with open(self.caching_file, 'r') as readfile:
+        with open(self.caching_file, 'r', encoding='utf-8') as readfile:
             file_length = os.stat(self.caching_file).st_size
+            LOG.info(file_length)
             if file_length == 0:
-                LOG.info('No shop in cache')
+                LOG.info('Cache is empty')
+                readfile.close()
                 return None, {}
             else:
                 data = json.load(readfile)
-                found_key = [key for key in data.keys() if key in user_request or user_request in key]
-                if user_request is []:
-                    LOG.info("Shop doesn't exist in cache")
-                    return None, data
+                LOG.info(data)
+                found_key = [key for key in data.keys() 
+                                if key.lower() in user_request.lower() 
+                                    or user_request.lower() in key.lower()]
+                LOG.info(f'found key {found_key}')
+                if len(found_key) >=1 :
+                    store_name = str(found_key[0])
+                    LOG.info(f'Shop exists {data[store_name]}')
+                    readfile.close()
+                    return data[store_name], data
                 else:
-                    LOG.info('Shop exists')
-                    return data[found_key], data
+                    LOG.info("Shop doesn't exist in cache")
+                    readfile.close()
+                    return None, data
 
     def caching_stores(self, data, store_info: list):
         """
@@ -100,17 +109,15 @@ class RequestHandler():
             {"name": "ABS stores", "time": "8am-10pm", "location": "2 level"}
             ]}
         """
+        LOG.info(f'data from JSON {data}')
         if data == {}:
-            for store in store_info:
-                data = {store['name']: store}
-                if data != {}:
-                    new_store = {store['name']: store}
-                    data.update(new_store)
+            data = {store_info[0]['name']: store_info}
         else:
-            new_store = {store_info['name']: store_info}
-            data.update(new_store)
-        with open(self.caching_file, 'w') as outfile:
+            data[store_info[0]['name']] = store_info
+        LOG.info(f'Updated {data}')
+        with open(self.caching_file, "w+", encoding='utf-8') as outfile:
             json.dump(data, outfile)
+            outfile.close()
         return store_info
 
     def existing_lang_check(user_lang: str, url):
@@ -234,6 +241,7 @@ class RequestHandler():
         # search for store existence in cache
         found_shops, data = self.find_cached_stores(user_request)
         if found_shops is not None:
+            LOG.info(f"found_shops: {found_shops}")
             return found_shops
         else:
             # parsing mall web-page
@@ -250,6 +258,7 @@ class RequestHandler():
                     location = info.find_next(attrs={"tenant-location-container"}).text.strip('\n')
                     shop_data = {'name': name, 'hours': hours, 'location': location, 'logo': logo}
                     found_shops.append(shop_data)
+            LOG.info(f'I parsed: {found_shops}')
             if found_shops:
                 # caching if shop was found
                 self.caching_stores(data, found_shops)

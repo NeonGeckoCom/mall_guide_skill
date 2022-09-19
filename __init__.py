@@ -61,19 +61,23 @@ class DirectorySkill(NeonSkill):
 
     def user_request_handling(self, message):
         LOG.info(f"Message is {message.data}")
-        request_lang = message.data['lang'].split('-')[0]
-        user_request = message.data['shop']
-        LOG.info(f"{self.mall_link()}")
-        LOG.info(str(request_lang))
-        LOG.info(user_request)
-        found, link = RequestHandler.existing_lang_check(request_lang, self.mall_link())
-        if found:
-            link = self.mall_link()+request_lang+'/directory/'
-            LOG.info('new link: '+ link)
-            return user_request, link
-        else:
-            self.speak_dialog("no_lang")
+        if message.data == {}:
+            self.speak('Message is empty')
             return None, None
+        else:
+            request_lang = message.data['lang'].split('-')[0]
+            user_request = message.data['shop']
+            LOG.info(f"{self.mall_link()}")
+            LOG.info(str(request_lang))
+            LOG.info(user_request)
+            found, link = RequestHandler.existing_lang_check(request_lang, self.mall_link())
+            if found:
+                link = self.mall_link()+request_lang+'/directory/'
+                LOG.info('new link: '+ link)
+                return user_request, link
+            else:
+                self.speak_dialog("no_lang")
+                return None, None
 
     def start_again(self):
         start_again = self.ask_yesno("ask_more")
@@ -145,7 +149,8 @@ class DirectorySkill(NeonSkill):
         open_shops = []
         day_time, hour, min = self.request_handler.curent_time_extraction()
         for shop in shop_info:
-            parse_time = shop['time'].split('-')
+            parse_time = shop['hours'].split('-')
+            LOG.info(f'Parse time {parse_time}')
             open_time = int(re.sub('[^\d+]', '', parse_time[0]))
             close_time = int(re.sub('[^\d+]', '', parse_time[1]))
             if open_time <= hour < close_time:
@@ -175,7 +180,7 @@ class DirectorySkill(NeonSkill):
             Prompt: 'Shop is closed now. Opens in 1 hour'
         """
         for shop in shop_info:
-            work_time = shop['time']
+            work_time = shop['hours']
             shop_name = shop['name']
             day_time, hour, min = self.request_handler.curent_time_extraction()
             parse_time = work_time.split('-')
@@ -251,6 +256,8 @@ class DirectorySkill(NeonSkill):
             self.speak_dialog(f"I am parsing shops and malls for your request")
             LOG.info(f"I am parsing shops and malls for your request")
             shop_info = self.request_handler.get_shop_data(mall_link, user_request)
+            LOG.info(f"I found {len(shop_info)} shops")
+            LOG.info(f"shop list: {shop_info}")
             if len(shop_info) == 0:
                 self.speak_dialog("shop_not_found")
                 user_request = self.get_response('repeat')
@@ -259,15 +266,21 @@ class DirectorySkill(NeonSkill):
                 self.speak_dialog('more_than_one')
                 # ask for the way of selection: time, location, nothing
                 sorting_selection = self.get_response('Do you want to select'
-                                                      'store by time or location?')
-                if sorting_selection.contains('time'):
-                    return self.shops_by_time_selection(shop_info)
-                elif sorting_selection.contains('location'):
-                    return self.location_selection(shop_info)
-                elif sorting_selection.contains('no'):
-                    return self.shop_by_time_selection(shop_info)
-                else:
-                    return self.shop_by_time_selection(shop_info)
+                                                      'store by work hours or location?')
+                if sorting_selection:
+                    LOG.info(f'Users answer on sorting options: {sorting_selection}')
+                    if 'time' in sorting_selection or 'hour' in sorting_selection:
+                        LOG.info('Time sorting selected')
+                        return self.shops_by_time_selection(shop_info)
+                    elif 'location' in sorting_selection:
+                        LOG.info('Location sorting selected')
+                        return self.location_selection(shop_info)
+                    elif 'no' in sorting_selection:
+                        LOG.info('No sorting selected. Sorting by time on default.')
+                        return self.shops_by_time_selection(shop_info)
+                    else:
+                        LOG.info('Nothing matched. Sorting by time on default.')
+                        return self.shops_by_time_selection(shop_info)
             else:
                 LOG.info(f"found shop {shop_info}")
                 self.speak_shops(shop_info)
