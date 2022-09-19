@@ -19,8 +19,7 @@
             "numpy",
             "ovos-lingua-franca",
             "pytz",
-            "requests",
-            "urllib"
+            "requests"
         ],
         "system": {},
         "skill": []
