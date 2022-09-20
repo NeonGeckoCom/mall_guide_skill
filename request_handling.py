@@ -39,20 +39,20 @@ lingua_franca.load_language('en')
 
 import re
 import os
+import os, sys, stat
 from os import path
 import json
 
 from datetime import datetime
-import pytz
 
 
 class RequestHandler():
 
     def __init__(self) -> None:
         self.caching_file = path.join(path.abspath(path.dirname(__file__)),
-                                  'cached_stores.json')
+                                  r'cached_stores.json')
 
-    def find_cached_stores(self, user_request: str):
+    def find_cached_stores(self, user_request: str, url):
         """
         Check shop name existence in cache keys
         Args:
@@ -67,14 +67,12 @@ class RequestHandler():
             {"name": "ABS stores", "time": "8am-10pm", "location": "2 level"}
             ]
         """
-        with open(self.caching_file, 'r', encoding='utf-8') as readfile:
-            file_length = os.stat(self.caching_file).st_size
-            LOG.info(file_length)
-            if file_length == 0:
-                LOG.info('Cache is empty')
-                readfile.close()
-                return None, {}
-            else:
+        if os.path.isfile(self.caching_file) == False:
+            LOG.info("Cache file doesn't exist")
+            self.caching_stores_in_mall(url)
+            self.find_cached_stores(user_request, url)
+        else:
+            with open(self.caching_file, 'r', encoding='utf-8') as readfile:
                 data = json.load(readfile)
                 LOG.info(data)
                 found_key = [key for key in data.keys() 
@@ -84,12 +82,35 @@ class RequestHandler():
                 if len(found_key) >=1 :
                     store_name = str(found_key[0])
                     LOG.info(f'Shop exists {data[store_name]}')
-                    readfile.close()
                     return data[store_name], data
                 else:
                     LOG.info("Shop doesn't exist in cache")
-                    readfile.close()
                     return None, data
+
+    def caching_stores_in_mall(self, url):
+        shop_cache = {}
+        soup = self.parse(url)
+        for shop in soup.find_all(attrs={"class": "directory-tenant-card"}):
+                logo = shop.find_next("img").get('src')
+                info = shop.find_next(attrs={"class": "tenant-info-container"})
+                name = info.find_next(attrs={"class": "tenant-info-row"}).text.strip().strip('\n')
+                hours = info.find_next(attrs={"class": "tenant-hours-container"}).text.strip('\n')
+                location = info.find_next(attrs={"tenant-location-container"}).text.strip('\n')
+                shop_data = {'name': name, 'hours': hours, 'location': location, 'logo': logo}
+                if name in shop_cache.keys():
+                    shop_cache[name].append(shop_data)                
+                else:
+                    shop_cache[name] = [shop_data]
+        # os.umask(0)
+        # os.open(self.caching_file, 777)
+        # os.chmod(self.caching_file, 777)
+        # with open(self.caching_file, "w+", encoding='utf-8') as outfile:
+        with open(self.caching_file, "w", encoding='utf-8') as outfile:
+            LOG.info(f'Writable {outfile.writable()}')
+            json.dump(shop_cache, outfile, ensure_ascii=False)
+        os.chmod(self.caching_file, 777)
+        LOG.info("Created mall's cache")
+
 
     def caching_stores(self, data, store_info: list):
         """
@@ -110,13 +131,10 @@ class RequestHandler():
             ]}
         """
         LOG.info(f'data from JSON {data}')
-        if data == {}:
-            data = {store_info[0]['name']: store_info}
-        else:
-            data[store_info[0]['name']] = store_info
+        data[store_info[0]['name']] = store_info
         LOG.info(f'Updated {data}')
         with open(self.caching_file, "w+", encoding='utf-8') as outfile:
-            json.dump(data, outfile)
+            json.dump(data, outfile, ensure_ascii=False)
             outfile.close()
         return store_info
 
@@ -150,7 +168,8 @@ class RequestHandler():
             hour (int): current hour
             min (int): current minute
         """
-        now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%H:%M %p")
+        now = datetime.today().strftime("%H:%M %p")
+        LOG.info(f'now {now}')
         day_time = now.lower().split(' ')
         exact_time = day_time[0].split(':')
         hour, min = int(exact_time[0]), int(exact_time[1])
@@ -239,8 +258,8 @@ class RequestHandler():
             : found_shops (list): found shops' info
         """
         # search for store existence in cache
-        found_shops, data = self.find_cached_stores(user_request)
-        if found_shops is not None:
+        found_shops, data = self.find_cached_stores(user_request, url)
+        if found_shops:
             LOG.info(f"found_shops: {found_shops}")
             return found_shops
         else:

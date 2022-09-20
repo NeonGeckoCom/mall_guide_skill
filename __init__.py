@@ -111,7 +111,7 @@ class DirectorySkill(NeonSkill):
             hours = re.sub('(\d+)am(.+\d)pm', r'\1 A M \2 P M', shop['hours'])
             self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location})
             LOG.info({"name": shop['name'], "hours": hours, "location": location})
-            #self.gui.show_image(shop['logo'])
+            self.gui.show_image(shop['logo'], caption=f'{hours} {location}', title=shop['name'])
 
     def location_selection(self, shop_info):
         """
@@ -148,6 +148,7 @@ class DirectorySkill(NeonSkill):
        """
         open_shops = []
         day_time, hour, min = self.request_handler.curent_time_extraction()
+        LOG.info(f"User's time {day_time, hour, min}")
         for shop in shop_info:
             parse_time = shop['hours'].split('-')
             LOG.info(f'Parse time {parse_time}')
@@ -181,21 +182,28 @@ class DirectorySkill(NeonSkill):
         """
         for shop in shop_info:
             work_time = shop['hours']
+            LOG.info(f'work_time {work_time}')
             shop_name = shop['name']
             day_time, hour, min = self.request_handler.curent_time_extraction()
             parse_time = work_time.split('-')
+            LOG.info(f'parse_time {parse_time}')
             open_time = int(re.sub('[^\d+]', '', parse_time[0]))
             close_time = int(re.sub('[^\d+]', '', parse_time[1]))
             # time left
             wait_h = open_time - hour - 1
             wait_min = 60 - min
-            if open:
+            if open is True:
                 if day_time[1] == 'pm' and 0 >= (close_time - hour) <= 1:
-                    self.speak(f'{shop_name} closes in {wait_min} minutes')
+                    self.speak(f'{shop_name} closes in {wait_min} minutes.')
+                else:
+                    self.speak(f'{shop_name} is open.')
                 self.speak_shops([shop])
             else:
                 if day_time[1] == 'am' and hour < open_time:
-                    self.speak(f'{shop_name} is closed now. Opens in {wait_h} hour and {wait_min} minutes')
+                    if wait_h == 0:
+                        self.speak(f'{shop_name} is closed now. Opens in {wait_min} minutes')
+                    else:
+                        self.speak(f'{shop_name} is closed now. Opens in {wait_h} hour and {wait_min} minutes')
                 elif hour >= close_time:
                     self.speak(f'{shop_name} is closed now. Shop opens at {open_time}')
                 self.speak_shops([shop])
@@ -291,7 +299,6 @@ class DirectorySkill(NeonSkill):
 
     def execute(self, user_request, mall_link):
         count = 0
-        user_request = user_request
         LOG.info('Start execute')
         while count < 3:
             LOG.info(str(user_request))
