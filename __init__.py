@@ -27,6 +27,7 @@
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+from os import path
 from neon_utils.skills.neon_skill import NeonSkill, LOG
 from mycroft.skills.core import intent_file_handler
 from .request_handling import RequestHandler
@@ -41,6 +42,8 @@ class DirectorySkill(NeonSkill):
         self.request_handler = RequestHandler()
         self.cache = dict()
         self.url = "https://www.alamoanacenter.com/en/directory/"
+        from os import path
+        self.path = 'cached_stores.json'
 
 
     def initialize(self):
@@ -61,8 +64,7 @@ class DirectorySkill(NeonSkill):
 
     def user_request_handling(self, message):
         LOG.info(f"Message is {message.data}")
-        if message.data == {}:
-            self.speak('Message is empty')
+        if message.data == {} or message is None:
             return None, None
         else:
             request_lang = message.data['lang'].split('-')[0]
@@ -192,7 +194,7 @@ class DirectorySkill(NeonSkill):
             # time left
             wait_h = open_time - hour - 1
             wait_min = 60 - min
-            if open is True:
+            if open:
                 if day_time[1] == 'pm' and 0 >= (close_time - hour) <= 1:
                     self.speak(f'{shop_name} closes in {wait_min} minutes.')
                 else:
@@ -263,7 +265,8 @@ class DirectorySkill(NeonSkill):
         if user_request is not None:
             self.speak_dialog(f"I am parsing shops and malls for your request")
             LOG.info(f"I am parsing shops and malls for your request")
-            shop_info = self.request_handler.get_shop_data(mall_link, user_request)
+            file_path = self.file_system.path
+            shop_info = self.request_handler.get_shop_data(mall_link, user_request, file_path)
             LOG.info(f"I found {len(shop_info)} shops")
             LOG.info(f"shop list: {shop_info}")
             if len(shop_info) == 0:
@@ -300,7 +303,7 @@ class DirectorySkill(NeonSkill):
     def execute(self, user_request, mall_link):
         count = 0
         LOG.info('Start execute')
-        while count < 3:
+        while count < 3 and user_request is not None and mall_link is not None:
             LOG.info(str(user_request))
             LOG.info(str(mall_link))
             new_count, user_request = self.find_shop(user_request, mall_link)
@@ -314,8 +317,11 @@ class DirectorySkill(NeonSkill):
             return None
 
     def _start_mall_parser_prompt(self, message):
+        if self.neon_in_request(message):
             LOG.info('Prompting Mall parsing start')
             self.make_active()
+            self.path = self.file_system.path
+            LOG.info(self.path)
             if message is not None:
                 LOG.info('new message'+str(message))
                 user_request, mall_link = self.user_request_handling(message)
@@ -326,8 +332,10 @@ class DirectorySkill(NeonSkill):
                         return
                     else:
                         self.speak_dialog('finished')
-                else:
-                    self.speak_dialog('finished')
+            else:
+                self.speak_dialog('finished')
+        else:
+            return
             
 
 

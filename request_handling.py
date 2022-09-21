@@ -26,6 +26,7 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import pickle
 from urllib.error import HTTPError
 import requests
 import bs4
@@ -49,10 +50,9 @@ from datetime import datetime
 class RequestHandler():
 
     def __init__(self) -> None:
-        self.caching_file = path.join(path.abspath(path.dirname(__file__)),
-                                  r'cached_stores.json')
+        self.caching_file = ''
 
-    def find_cached_stores(self, user_request: str, url):
+    def find_cached_stores(self, user_request: str, url, file_path):
         """
         Check shop name existence in cache keys
         Args:
@@ -69,12 +69,11 @@ class RequestHandler():
         """
         if os.path.isfile(self.caching_file) == False:
             LOG.info("Cache file doesn't exist")
-            self.caching_stores_in_mall(url)
-            self.find_cached_stores(user_request, url)
+            self.caching_stores_in_mall(file_path, url)
+            self.find_cached_stores(user_request, url, file_path)
         else:
             with open(self.caching_file, 'r', encoding='utf-8') as readfile:
                 data = json.load(readfile)
-                LOG.info(data)
                 found_key = [key for key in data.keys() 
                                 if key.lower() in user_request.lower() 
                                     or user_request.lower() in key.lower()]
@@ -87,7 +86,9 @@ class RequestHandler():
                     LOG.info("Shop doesn't exist in cache")
                     return None, data
 
-    def caching_stores_in_mall(self, url):
+    def caching_stores_in_mall(self, file_path, url):
+        self.caching_file = file_path+'/cached_stores.json'
+        LOG.info(self.caching_file)
         shop_cache = {}
         soup = self.parse(url)
         for shop in soup.find_all(attrs={"class": "directory-tenant-card"}):
@@ -101,12 +102,8 @@ class RequestHandler():
                     shop_cache[name].append(shop_data)                
                 else:
                     shop_cache[name] = [shop_data]
-        # os.umask(0)
-        # os.open(self.caching_file, 777)
-        # os.chmod(self.caching_file, 777)
-        # with open(self.caching_file, "w+", encoding='utf-8') as outfile:
-        with open(self.caching_file, "w", encoding='utf-8') as outfile:
-            LOG.info(f'Writable {outfile.writable()}')
+        with open(self.caching_file,
+                                   'w+') as outfile:
             json.dump(shop_cache, outfile, ensure_ascii=False)
         os.chmod(self.caching_file, 777)
         LOG.info("Created mall's cache")
@@ -133,9 +130,9 @@ class RequestHandler():
         LOG.info(f'data from JSON {data}')
         data[store_info[0]['name']] = store_info
         LOG.info(f'Updated {data}')
-        with open(self.caching_file, "w+", encoding='utf-8') as outfile:
-            json.dump(data, outfile, ensure_ascii=False)
-            outfile.close()
+        with open(self.caching_file,
+                                   'w+') as outfile:
+            json.dump(data, outfile, ensure_ascii=False) 
         return store_info
 
     def existing_lang_check(user_lang: str, url):
@@ -241,7 +238,7 @@ class RequestHandler():
             LOG.info("Failed url parsing")
 
 
-    def get_shop_data(self, url, user_request):
+    def get_shop_data(self, url, user_request, file_path):
         """
         Check existence of user's request store in cache
         if shop was found returns list with shop info,
@@ -258,7 +255,9 @@ class RequestHandler():
             : found_shops (list): found shops' info
         """
         # search for store existence in cache
-        found_shops, data = self.find_cached_stores(user_request, url)
+        LOG.info(file_path)
+        found_shops, data = self.find_cached_stores(user_request, url, file_path)
+        LOG.info(found_shops)
         if found_shops:
             LOG.info(f"found_shops: {found_shops}")
             return found_shops
@@ -280,7 +279,7 @@ class RequestHandler():
             LOG.info(f'I parsed: {found_shops}')
             if found_shops:
                 # caching if shop was found
-                self.caching_stores(data, found_shops)
+                found_shops = self.caching_stores(data, found_shops)
                 return found_shops
             else:
                 # return empty list
