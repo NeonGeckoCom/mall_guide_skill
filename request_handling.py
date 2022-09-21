@@ -70,7 +70,7 @@ class RequestHandler():
         if os.path.isfile(self.caching_file) == False:
             LOG.info("Cache file doesn't exist")
             self.caching_stores_in_mall(file_path, url)
-            self.find_cached_stores(user_request, url, file_path)
+            return self.find_cached_stores(user_request, url, file_path)
         else:
             with open(self.caching_file, 'r', encoding='utf-8') as readfile:
                 data = json.load(readfile)

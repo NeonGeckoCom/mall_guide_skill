@@ -189,8 +189,8 @@ class DirectorySkill(NeonSkill):
             day_time, hour, min = self.request_handler.curent_time_extraction()
             parse_time = work_time.split('-')
             LOG.info(f'parse_time {parse_time}')
-            open_time = int(re.sub('[^\d+]', '', parse_time[0]))
-            close_time = int(re.sub('[^\d+]', '', parse_time[1]))
+            open_time = int(re.sub(r'[^\d+]', '', parse_time[0]))
+            close_time = int(re.sub(r'[^\d+]', '', parse_time[1]))
             # time left
             wait_h = open_time - hour - 1
             wait_min = 60 - min
@@ -299,6 +299,7 @@ class DirectorySkill(NeonSkill):
         else:
             LOG.info(str(None))
             return 3, None
+        return 3, None
 
     def execute(self, user_request, mall_link):
         count = 0
