@@ -138,7 +138,7 @@ class DirectorySkill(NeonSkill):
             self.speak_shops(shop_info)
             return 3, None
 
-    def open_shops_search(self, shop_info):
+    def open_shops_search(self, shop_info, day_time, hour, min):
         """
        Selects open shops. Collects the list of
        open shops else return empty list.
@@ -149,20 +149,22 @@ class DirectorySkill(NeonSkill):
            shop_info (list): open shops
        """
         open_shops = []
-        day_time, hour, min = self.request_handler.curent_time_extraction()
         LOG.info(f"User's time {day_time, hour, min}")
         for shop in shop_info:
-            parse_time = shop['hours'].split('-')
-            LOG.info(f'Parse time {parse_time}')
-            open_time = int(re.sub('[^\d+]', '', parse_time[0]))
-            close_time = int(re.sub('[^\d+]', '', parse_time[1]))
+            parse_time = re.findall(r'(\d+)+[am|pm]', shop['hours'])
+            LOG.info(f'Parsed time {parse_time}')
+            open_time = int(parse_time[0])
+            close_time = int(parse_time[1])
             if open_time <= hour < close_time:
+                open_shops.append(shop)
+            elif day_time[1] == 'am' and open_time <= hour:
                 open_shops.append(shop)
         return open_shops
 
 
-    def time_calculation(self, shop_info, open):
+    def time_calculation(self, shop_info, open, day_time, hour, min):
         # add logic if shop opens and closes not at am-pm time period
+        # change to speak dialog
         """
         Calculates time difference between user's current time
         and shop working hours.
@@ -184,30 +186,37 @@ class DirectorySkill(NeonSkill):
         """
         for shop in shop_info:
             work_time = shop['hours']
+            normalized_time = re.findall(r'(\d+)[am|pm]', work_time)
+            open_time = int(normalized_time[0])
+            close_time = int(normalized_time[1])
             LOG.info(f'work_time {work_time}')
             shop_name = shop['name']
-            day_time, hour, min = self.request_handler.curent_time_extraction()
             parse_time = work_time.split('-')
             LOG.info(f'parse_time {parse_time}')
-            open_time = int(re.sub(r'[^\d+]', '', parse_time[0]))
-            close_time = int(re.sub(r'[^\d+]', '', parse_time[1]))
             # time left
             wait_h = open_time - hour - 1
             wait_min = 60 - min
             if open:
-                if day_time[1] == 'pm' and 0 >= (close_time - hour) <= 1:
+                if day_time[1] == 'pm' and 0 < (close_time - hour) <= 1:
+                    LOG.info(f'{shop_name} closes in {wait_min} minutes.')
                     self.speak(f'{shop_name} closes in {wait_min} minutes.')
                 else:
+                    LOG.info(f'{shop_name} is open.')
                     self.speak(f'{shop_name} is open.')
+                LOG.info([shop])
                 self.speak_shops([shop])
             else:
                 if day_time[1] == 'am' and hour < open_time:
                     if wait_h == 0:
+                        LOG.info(f'{shop_name} is closed now. Opens in {wait_min} minutes')
                         self.speak(f'{shop_name} is closed now. Opens in {wait_min} minutes')
                     else:
+                        LOG.info(f'{shop_name} is closed now. Opens in {wait_h} hour and {wait_min} minutes')
                         self.speak(f'{shop_name} is closed now. Opens in {wait_h} hour and {wait_min} minutes')
                 elif hour >= close_time:
+                    LOG.info(f'{shop_name} is closed now. Shop opens at {open_time}')
                     self.speak(f'{shop_name} is closed now. Shop opens at {open_time}')
+                LOG.info([shop])
                 self.speak_shops([shop])
         return 3, None
 
@@ -223,11 +232,12 @@ class DirectorySkill(NeonSkill):
            shop_info (list): open shops
         """
         LOG.info(f"Shop by time selection {shop_info}")
-        open_shops = self.open_shops_search(shop_info)
+        day_time, hour, min = self.request_handler.curent_time_extraction()
+        open_shops = self.open_shops_search(shop_info, day_time, hour, min)
         if len(open_shops) >= 1:
-            return self.time_calculation(open_shops, True)
+            return self.time_calculation(open_shops, True, day_time, hour, min)
         else:
-            return self.time_calculation(shop_info, False)
+            return self.time_calculation(shop_info, False, day_time, hour, min)
 
     def find_shop(self, user_request, mall_link):
         """
@@ -260,8 +270,8 @@ class DirectorySkill(NeonSkill):
         Location and time sorting functions return
         3, None to stop current shop search.
         """
-        LOG.info(str(user_request))
-        LOG.info(str(mall_link))
+        LOG.info(f'user_request {user_request}')
+        LOG.info(f'mall_link {mall_link}')
         if user_request is not None:
             self.speak_dialog(f"I am parsing shops and malls for your request")
             LOG.info(f"I am parsing shops and malls for your request")
@@ -305,8 +315,6 @@ class DirectorySkill(NeonSkill):
         count = 0
         LOG.info('Start execute')
         while count < 3 and user_request is not None and mall_link is not None:
-            LOG.info(str(user_request))
-            LOG.info(str(mall_link))
             new_count, user_request = self.find_shop(user_request, mall_link)
             count = count + new_count
         user_request = self.start_again()

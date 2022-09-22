@@ -76,28 +76,47 @@ class TestSkill(unittest.TestCase):
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.test_fs)
 
-    def test_en_skill_init(self):
-        self.skill.ask_yesno = Mock(return_value="yes")
-        self.skill.gui._pages2uri = Mock()
-        self.skill._start_mall_parser_prompt(
-            Message('test', {'utterance': 'find ABC stores',
-                                   'shop': 'ABC stores',
-                                   'lang': 'en-us'},
-                          {'context_key': 'MallParsing'})
-        )
-            # Message('test', {'utterance': 'find Jams World',
-            #                     'shop': 'Jams World',
-            #                     'lang': 'en-us'
-            #                     },
-            #                 {'context_key': 'MallParsing'}))
+    # def test_en_skill_init(self):
+    #     self.skill.ask_yesno = Mock(return_value="yes")
+    #     self.skill.gui._pages2uri = Mock()
+    #     self.skill._start_mall_parser_prompt(
+    #         Message('test', {'utterance': 'find ABC stores',
+    #                                'shop': 'ABC stores',
+    #                                'lang': 'en-us'},
+    #                       {'context_key': 'MallParsing'})
+    #     )
+    #         # Message('test', {'utterance': 'find Jams World',
+    #         #                     'shop': 'Jams World',
+    #         #                     'lang': 'en-us'
+    #         #                     },
+    #         #                 {'context_key': 'MallParsing'}))
                             
-        message = Message('test', {'utterance': 'find ABC stores',
-                                   'shop': 'ABC stores',
-                                   'lang': 'en-us'},
-                          {'context_key': 'MallParsing'})
+    #     message = Message('test', {'utterance': 'find ABC stores',
+    #                                'shop': 'ABC stores',
+    #                                'lang': 'en-us'},
+    #                       {'context_key': 'MallParsing'})
         
-        self.skill.user_request_handling(message)
+    #     self.skill.user_request_handling(message)
 
+    def test_en_time_extraction(self):
+        shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
+                        {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
+        day_time, hour, min = ['10:15', 'am'], 10, 15
+        result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
+        self.assertEqual(shop_info, result_shops)
+
+        day_time, hour, min = ['9:15', 'am'], 9, 15
+        result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
+        self.assertEqual(shop_info[0], result_shops[0])
+
+    def test_en_time_extraction(self):
+        shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
+                        {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
+        # day_time, hour, min = ['10:15', 'am'], 10, 15
+        # print(self.skill.time_calculation(shop_info, True, day_time, hour, min))
+
+        # day_time, hour, min = ['11:15', 'pm'], 11, 15
+        # print(self.skill.time_calculation(shop_info, False, day_time, hour, min))
 
 
 if __name__ == '__main__':
