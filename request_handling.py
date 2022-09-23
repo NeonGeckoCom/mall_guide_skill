@@ -165,7 +165,8 @@ class RequestHandler():
             hour (int): current hour
             min (int): current minute
         """
-        now = datetime.today().strftime("%H:%M %p")
+        now = datetime.now().time().strftime("%I:%M %p")
+        # now = datetime.today().strftime("%H:%M %p")
         LOG.info(f'now {now}')
         day_time = now.lower().split(' ')
         exact_time = day_time[0].split(':')

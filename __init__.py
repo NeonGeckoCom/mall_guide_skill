@@ -233,6 +233,7 @@ class DirectorySkill(NeonSkill):
         """
         LOG.info(f"Shop by time selection {shop_info}")
         day_time, hour, min = self.request_handler.curent_time_extraction()
+        # day_time, hour, min = ['11:15', 'pm'], 11, 15
         open_shops = self.open_shops_search(shop_info, day_time, hour, min)
         if len(open_shops) >= 1:
             return self.time_calculation(open_shops, True, day_time, hour, min)
