@@ -31,6 +31,10 @@ from os import path
 from neon_utils.skills.neon_skill import NeonSkill, LOG
 from mycroft.skills.core import intent_file_handler
 from .request_handling import RequestHandler
+# from .request_handling import existing_lang_check, get_shop_data,\
+#                                 shop_selection_by_floors,\
+#                                 location_format,\
+#                                 curent_time_extraction
 import re
 
 
@@ -42,7 +46,6 @@ class DirectorySkill(NeonSkill):
         self.request_handler = RequestHandler()
         self.cache = dict()
         self.url = "https://www.alamoanacenter.com/en/directory/"
-        from os import path
         self.path = 'cached_stores.json'
 
 
@@ -67,7 +70,7 @@ class DirectorySkill(NeonSkill):
         if message.data == {} or message is None:
             return None, None
         else:
-            request_lang = message.data['lang'].split('-')[0]
+            request_lang = self.lang.split('-')[0]
             user_request = message.data['shop']
             LOG.info(f"{self.mall_link()}")
             LOG.info(str(request_lang))
@@ -82,27 +85,38 @@ class DirectorySkill(NeonSkill):
                 return None, None
 
     def start_again(self):
+        """
+        Asks yes/no question whether user wants to
+        get another shop info, after Neon gave the
+        information about previously selected shop.
+        If user's answer 'yes': asks what shop is
+        needed. Returns user's answer.
+        If 'no', speaks corresponding dialog.
+        If some other answer, speaks corresponding
+        dialog
+        Returns:
+            None (if no shop in request, if user's
+            answer is 'no', if user gives some other
+            answer)
+        """
         start_again = self.ask_yesno("ask_more")
         if start_again == "yes":
             another_shop = self.get_response('another_shop')
             if another_shop is not None:
                 LOG.info(f'another shop {another_shop}')
                 return another_shop
-            else:
-                return None
         elif start_again == "no":
             self.speak_dialog('no_shop_request')
-            return None
         else:
             self.speak_dialog('unexpected_error')
-            return None
+        return None
 
     def speak_shops(self, shop_info):
         """
         Speaks shop info that was found.
         Substitutes time format for better pronunciation.
         speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location})
-        Shows shop label image.
+        Shows shop label image in gui.
         Args:
             shop_info (list): found shops on user's
                                 request
@@ -110,7 +124,7 @@ class DirectorySkill(NeonSkill):
         for shop in shop_info:
             LOG.info(shop)
             location = self.request_handler.location_format(shop['location'])
-            hours = re.sub('(\d+)am(.+\d)pm', r'\1 A M \2 P M', shop['hours'])
+            hours = re.sub('(\d+)am.+(\d+)pm', r'from \1 A M to \2 P M', shop['hours'])
             self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location})
             LOG.info({"name": shop['name'], "hours": hours, "location": location})
             self.gui.show_image(shop['logo'], caption=f'{hours} {location}', title=shop['name'])
@@ -132,11 +146,10 @@ class DirectorySkill(NeonSkill):
         shops = self.request_handler.shop_selection_by_floors(floor, shop_info)
         if shops:
             self.speak_shops(shops)
-            return 3, None
         else:
             self.speak_dialog('no_shop_on_level')
             self.speak_shops(shop_info)
-            return 3, None
+        return 3, None
 
     def open_shops_search(self, shop_info, day_time, hour, min):
         """
@@ -168,17 +181,29 @@ class DirectorySkill(NeonSkill):
         """
         Calculates time difference between user's current time
         and shop working hours.
-        If shop is closed and user is before opening speaks how
-        much time is left for waiting. If user's time is evening
-        speaks when the shop opens in the morning. In other cases
-        just speaks shops info.
-        If user in open hours, speak the shop info. If shop open
-        and closes in one hour speaks how many minutes left.
+        If 'open' argument is True:
+            If user one hour or less before closing: speaks how
+                many minutes left. Speaks shop info.
+            Else speaks corresponging dialog. 
+            Speaks shop info.
+        If 'open' argument is False:
+            Speaks corresponding dialog.
+            If user is one hour or less before opening hours 
+                speaks how much time is left for waiting. 
+            If user's time is 'am' and user is before opening
+                hours, speaks how many hours and minutes left 
+                waiting.
+            If user's time is evening (pm) speaks when the shop 
+                opens in the morning.
+                Speaks shop info.
         Args:
             shop_info (list): found shops on user's request
             open (boolean): True - if shop is open
+            day_time (str): user's current day time (am|pm) 
+            hour (int): user's current hour
+            min (int): user's current minute
         Returns:
-         3, None (to ask for another shop info)
+            3, None (to ask for another shop info)
         Examples:
             work time 9am-10pm
             user's time 8am
@@ -199,23 +224,23 @@ class DirectorySkill(NeonSkill):
             if open:
                 if day_time[1] == 'pm' and 0 < (close_time - hour) <= 1:
                     LOG.info(f'{shop_name} closes in {wait_min} minutes.')
-                    self.speak(f'{shop_name} closes in {wait_min} minutes.')
+                    self.speak_dialog('closing_minutes', {"shop_name": shop_name, "wait_min": wait_min})
                 else:
                     LOG.info(f'{shop_name} is open.')
-                    self.speak(f'{shop_name} is open.')
+                    self.speak_dialog('open_now', {'shop_name':  shop_name})
                 LOG.info([shop])
                 self.speak_shops([shop])
             else:
                 if day_time[1] == 'am' and hour < open_time:
                     if wait_h == 0:
                         LOG.info(f'{shop_name} is closed now. Opens in {wait_min} minutes')
-                        self.speak(f'{shop_name} is closed now. Opens in {wait_min} minutes')
+                        self.speak_dialog('opening_minutes', {"shop_name": shop_name, "wait_min": wait_min})
                     else:
                         LOG.info(f'{shop_name} is closed now. Opens in {wait_h} hour and {wait_min} minutes')
-                        self.speak(f'{shop_name} is closed now. Opens in {wait_h} hour and {wait_min} minutes')
+                        self.speak_dialog('opening_hours', {"shop_name": shop_name, "wait_h": wait_h, "wait_min": wait_min})
                 elif hour >= close_time:
                     LOG.info(f'{shop_name} is closed now. Shop opens at {open_time}')
-                    self.speak(f'{shop_name} is closed now. Shop opens at {open_time}')
+                    self.speak_dialog('closed_now', {'shop_name': shop_name, 'open_time': open_time})
                 LOG.info([shop])
                 self.speak_shops([shop])
         return 3, None
@@ -223,13 +248,18 @@ class DirectorySkill(NeonSkill):
     def shops_by_time_selection(self, shop_info):
         """
         If user chose to select shops by time or
-        use like default selection. Selects open
-        shops.
+        use like default selection. Gets user's
+        current time. Selects open shops. 
         Args:
            shop_info (list): found shops on user's
                                request
         Returns:
-           shop_info (list): open shops
+            time_calculation function with True 
+                in 'open' argument.
+            time_calculation function with False 
+                in 'open' argument. (if list
+                of open shops is 0)
+           
         """
         LOG.info(f"Shop by time selection {shop_info}")
         day_time, hour, min = self.request_handler.curent_time_extraction()
@@ -274,30 +304,29 @@ class DirectorySkill(NeonSkill):
         LOG.info(f'user_request {user_request}')
         LOG.info(f'mall_link {mall_link}')
         if user_request is not None:
-            self.speak_dialog(f"I am parsing shops and malls for your request")
+            self.speak_dialog("start_parsing")
             LOG.info(f"I am parsing shops and malls for your request")
             file_path = self.file_system.path
+            LOG.info(f'file_path {file_path}')
             shop_info = self.request_handler.get_shop_data(mall_link, user_request, file_path)
             LOG.info(f"I found {len(shop_info)} shops")
             LOG.info(f"shop list: {shop_info}")
             if len(shop_info) == 0:
-                self.speak_dialog("shop_not_found")
-                user_request = self.get_response('repeat')
+                user_request = self.get_response('shop_not_found')
                 return 1, user_request
             elif len(shop_info) > 1:
                 self.speak_dialog('more_than_one')
                 # ask for the way of selection: time, location, nothing
-                sorting_selection = self.get_response('Do you want to select'
-                                                      'store by work hours or location?')
+                sorting_selection = self.get_response('choose_selection')
                 if sorting_selection:
                     LOG.info(f'Users answer on sorting options: {sorting_selection}')
-                    if 'time' in sorting_selection or 'hour' in sorting_selection:
+                    if self.voc_match(sorting_selection, "time"):
                         LOG.info('Time sorting selected')
                         return self.shops_by_time_selection(shop_info)
-                    elif 'location' in sorting_selection:
+                    elif self.voc_match(sorting_selection, "location"):
                         LOG.info('Location sorting selected')
                         return self.location_selection(shop_info)
-                    elif 'no' in sorting_selection:
+                    elif self.voc_match(sorting_selection, "no"):
                         LOG.info('No sorting selected. Sorting by time on default.')
                         return self.shops_by_time_selection(shop_info)
                     else:
@@ -306,10 +335,6 @@ class DirectorySkill(NeonSkill):
             else:
                 LOG.info(f"found shop {shop_info}")
                 self.speak_shops(shop_info)
-                return 3, None
-        else:
-            LOG.info(str(None))
-            return 3, None
         return 3, None
 
     def execute(self, user_request, mall_link):
@@ -330,8 +355,6 @@ class DirectorySkill(NeonSkill):
         if self.neon_in_request(message):
             LOG.info('Prompting Mall parsing start')
             self.make_active()
-            self.path = self.file_system.path
-            LOG.info(self.path)
             if message is not None:
                 LOG.info('new message'+str(message))
                 user_request, mall_link = self.user_request_handling(message)

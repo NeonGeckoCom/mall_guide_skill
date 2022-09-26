@@ -26,7 +26,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pickle
 from urllib.error import HTTPError
 import requests
 import bs4
@@ -34,14 +33,11 @@ from neon_utils.skills.neon_skill import LOG
 import urllib.request
 
 import lingua_franca
-from lingua_franca import parse
 from lingua_franca.format import pronounce_number
 lingua_franca.load_language('en')
 
 import re
 import os
-import os, sys, stat
-from os import path
 import json
 
 from datetime import datetime
@@ -87,8 +83,27 @@ class RequestHandler():
                     return None, data
 
     def caching_stores_in_mall(self, file_path, url):
+        """
+        Creates caching file in the current class.
+        Creates empty dictionary for cache. Parses
+        all shops info. Creates dict key from shop
+        name. Value list of dicts with current shop
+        info.
+        If shop name already exists in created dict
+            append current shop dict to existing 
+            list.
+        Writes created dict to created JSON file.
+        Args:
+            file_path (str): new file path
+            url (str): malls url
+        Examples:
+            {"ABS stores": [
+            {"name": "ABS stores", "time": "8am-10pm", "location": "1 level"},
+            {"name": "ABS stores", "time": "8am-10pm", "location": "2 level"}
+            ]}
+        """
         self.caching_file = file_path+'/cached_stores.json'
-        LOG.info(self.caching_file)
+        LOG.info(f'caching_file {self.caching_file}')
         shop_cache = {}
         soup = self.parse(url)
         for shop in soup.find_all(attrs={"class": "directory-tenant-card"}):
@@ -103,7 +118,7 @@ class RequestHandler():
                 else:
                     shop_cache[name] = [shop_data]
         with open(self.caching_file,
-                                   'w+') as outfile:
+                                    'w+') as outfile:
             json.dump(shop_cache, outfile, ensure_ascii=False)
         os.chmod(self.caching_file, 777)
         LOG.info("Created mall's cache")
@@ -131,7 +146,7 @@ class RequestHandler():
         data[store_info[0]['name']] = store_info
         LOG.info(f'Updated {data}')
         with open(self.caching_file,
-                                   'w+') as outfile:
+                                    'w+') as outfile:
             json.dump(data, outfile, ensure_ascii=False) 
         return store_info
 

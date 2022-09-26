@@ -76,21 +76,21 @@ class TestSkill(unittest.TestCase):
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.test_fs)
 
-    # def test_en_skill_init(self):
-    #     self.skill.ask_yesno = Mock(return_value="yes")
-    #     self.skill.gui._pages2uri = Mock()
-    #     self.skill._start_mall_parser_prompt(
-    #         Message('test', {'utterance': 'find ABC stores',
-    #                                'shop': 'ABC stores',
-    #                                'lang': 'en-us'},
-    #                       {'context_key': 'MallParsing'})
-    #     )
+    def test_en_skill_init(self):
+        self.skill.ask_yesno = Mock(return_value="yes")
+        self.skill.gui._pages2uri = Mock()
+        self.skill._start_mall_parser_prompt(
+            Message('test', {'utterance': 'find ABC stores',
+                                   'shop': 'ABC stores',
+                                   'lang': 'en-us'},
+                          {'context_key': 'MallParsing'})
+        )
                             
-    #     message = Message('test', {'utterance': 'find ABC stores',
-    #                                'shop': 'ABC stores',
-    #                                'lang': 'en-us'},
-    #                       {'context_key': 'MallParsing'})
-    #     self.skill.user_request_handling(message)
+        message = Message('test', {'utterance': 'find ABC stores',
+                                   'shop': 'ABC stores',
+                                   'lang': 'en-us'},
+                          {'context_key': 'MallParsing'})
+        self.skill.user_request_handling(message)
 
     def test_en_time_extraction(self):
         shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
