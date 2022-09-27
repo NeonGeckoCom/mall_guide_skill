@@ -31,10 +31,10 @@ from os import path
 from neon_utils.skills.neon_skill import NeonSkill, LOG
 from mycroft.skills.core import intent_file_handler
 from .request_handling import RequestHandler
-# from .request_handling import existing_lang_check, get_shop_data,\
-#                                 shop_selection_by_floors,\
-#                                 location_format,\
-#                                 curent_time_extraction
+from .request_handling import existing_lang_check, get_shop_data,\
+                                shop_selection_by_floors,\
+                                location_format,\
+                                curent_time_extraction
 import re
 
 
@@ -75,7 +75,7 @@ class DirectorySkill(NeonSkill):
             LOG.info(f"{self.mall_link()}")
             LOG.info(str(request_lang))
             LOG.info(user_request)
-            found, link = RequestHandler.existing_lang_check(request_lang, self.mall_link())
+            found, link = existing_lang_check(request_lang, self.mall_link())
             if found:
                 link = self.mall_link()+request_lang+'/directory/'
                 LOG.info('new link: '+ link)
@@ -123,7 +123,7 @@ class DirectorySkill(NeonSkill):
         """
         for shop in shop_info:
             LOG.info(shop)
-            location = self.request_handler.location_format(shop['location'])
+            location = location_format(shop['location'])
             hours = re.sub('(\d+)am.+(\d+)pm', r'from \1 A M to \2 P M', shop['hours'])
             self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location})
             LOG.info({"name": shop['name'], "hours": hours, "location": location})
@@ -143,7 +143,7 @@ class DirectorySkill(NeonSkill):
         """
         LOG.info(f"Shop by location selection {shop_info}")
         floor = self.get_response('which_floor')
-        shops = self.request_handler.shop_selection_by_floors(floor, shop_info)
+        shops = shop_selection_by_floors(floor, shop_info)
         if shops:
             self.speak_shops(shops)
         else:
@@ -262,7 +262,7 @@ class DirectorySkill(NeonSkill):
            
         """
         LOG.info(f"Shop by time selection {shop_info}")
-        day_time, hour, min = self.request_handler.curent_time_extraction()
+        day_time, hour, min = curent_time_extraction()
         # day_time, hour, min = ['11:15', 'pm'], 11, 15
         open_shops = self.open_shops_search(shop_info, day_time, hour, min)
         if len(open_shops) >= 1:
@@ -308,7 +308,7 @@ class DirectorySkill(NeonSkill):
             LOG.info(f"I am parsing shops and malls for your request")
             file_path = self.file_system.path
             LOG.info(f'file_path {file_path}')
-            shop_info = self.request_handler.get_shop_data(mall_link, user_request, file_path)
+            shop_info = get_shop_data(mall_link, user_request, file_path)
             LOG.info(f"I found {len(shop_info)} shops")
             LOG.info(f"shop list: {shop_info}")
             if len(shop_info) == 0:
