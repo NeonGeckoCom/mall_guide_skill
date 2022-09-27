@@ -62,6 +62,15 @@ class DirectorySkill(NeonSkill):
         return self.settings.get("mall_link") or mall_link
 
     def user_request_handling(self, message):
+        """
+        Checks user language existence on mall's web-page
+        using existing_lang_check() function.
+        Returns:
+            None, None: if message is empty
+            None, None: if language is not supported
+            user_request, link (str, str): if language exists
+            answer)
+        """
         LOG.info(f"Message is {message.data}")
         if message.data == {} or message is None:
             return None, None
