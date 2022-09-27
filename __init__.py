@@ -27,7 +27,6 @@
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from os import path
 from neon_utils.skills.neon_skill import NeonSkill, LOG
 from mycroft.skills.core import intent_file_handler
 from .request_handling import RequestHandler
@@ -43,10 +42,7 @@ class DirectorySkill(NeonSkill):
 
     def __init__(self):
         super(DirectorySkill, self).__init__(name="DirectorySkill")
-        self.request_handler = RequestHandler()
-        self.cache = dict()
         self.url = "https://www.alamoanacenter.com/en/directory/"
-        self.path = 'cached_stores.json'
 
 
     def initialize(self):
