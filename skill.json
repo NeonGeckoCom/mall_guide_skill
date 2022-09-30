@@ -1,0 +1,49 @@
+{
+    "title": "{Malls parser skill neon}",
+    "url": "https://github.com/NeonGeckoCom/skill-directory",
+    "summary": "Skill for mall parsing",
+    "short_description": "Skill for mall parsing",
+    "description": "Skill parses mall web page and returns user name, location and work hours of requested shop, store",
+    "examples": [
+        "where is apple?",
+        "where can i find abc stores?"
+    ],
+    "desktopFile": false,
+    "warning": "",
+    "systemDeps": false,
+    "requirements": {
+        "python": [
+            "bs4",
+            "datetime",
+            "neon-utils~=1.0",
+            "numpy",
+            "ovos-lingua-franca",
+            "requests"
+        ],
+        "system": {},
+        "skill": []
+    },
+    "incompatible_skills": [],
+    "platforms": [
+        "i386",
+        "x86_64",
+        "ia64",
+        "arm64",
+        "arm"
+    ],
+    "branch": "master",
+    "license": "BSD-3-Clause",
+    "icon": "https://0000.us/klatchat/app/files/neon_images/icons/neon_skill.png",
+    "category": "Information",
+    "categories": [
+        "Information"
+    ],
+    "tags": [],
+    "credits": [
+        "NeonGeckoCom",
+        "NeonMariia"
+    ],
+    "skillname": "skill-directory",
+    "authorname": "NeonGeckoCom",
+    "foldername": null
+}
