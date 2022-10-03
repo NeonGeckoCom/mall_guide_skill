@@ -1,1 +1,1 @@
-{{name}}, work hours are {{hours}}. You can find this store on {{location}}.
+{{name}}, work hours are {{hours}}. You can find this store {{on}} {{location}}.
