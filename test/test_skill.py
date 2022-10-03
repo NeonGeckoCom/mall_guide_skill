@@ -92,16 +92,16 @@ class TestSkill(unittest.TestCase):
                           {'context_key': 'MallParsing'})
         self.skill.user_request_handling(message)
 
-    def test_en_time_extraction(self):
-        shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
-                        {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
-        day_time, hour, min = ['10:15', 'am'], 10, 15
-        result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
-        self.assertEqual(shop_info, result_shops)
+    # def test_en_time_extraction(self):
+    #     shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
+    #                     {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
+    #     day_time, hour, min = ['10:15', 'am'], 10, 15
+    #     result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
+    #     self.assertEqual(shop_info, result_shops)
 
-        day_time, hour, min = ['9:15', 'am'], 9, 15
-        result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
-        self.assertEqual(shop_info[0], result_shops[0])
+    #     day_time, hour, min = ['9:15', 'am'], 9, 15
+    #     result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
+    #     self.assertEqual(shop_info[0], result_shops[0])
 
     # def test_en_time_extraction(self):
     #     shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 

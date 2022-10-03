@@ -40,8 +40,6 @@ import re
 import os
 import json
 
-from datetime import datetime
-
 
 class RequestHandler():
         
@@ -140,26 +138,6 @@ def existing_lang_check(user_lang: str, url):
     else:
         LOG.info('This language is not supported')
         return False, link
-
-def curent_time_extraction():
-    """
-    Defines current time in utc timezone
-    Format: hour:minutes part of day (1:23 pm)
-
-    Returns:
-        day_time (list): contains splited time
-                            numerals and part of the day
-                            day_time -> ['07:19', 'am']
-        hour (int): current hour
-        min (int): current minute
-    """
-    now = datetime.now().time().strftime("%I:%M %p")
-    # now = datetime.today().strftime("%H:%M %p")
-    LOG.info(f'now {now}')
-    day_time = now.lower().split(' ')
-    exact_time = day_time[0].split(':')
-    hour, min = int(exact_time[0]), int(exact_time[1])
-    return day_time, hour, min
 
 def location_format(location):
     """
