@@ -182,7 +182,7 @@ def shop_selection_by_floors(user_request, found_shops):
     """
     shops_by_floor = []
     for shop in found_shops:
-        numbers = re.findall(r'\d+', shop['location'])
+        numbers = re.findall(r'\d+', shop[2]['location'])
         if len(numbers) > 0:
             numbers = numbers[0]
             num = pronounce_number(int(numbers), ordinals=False)

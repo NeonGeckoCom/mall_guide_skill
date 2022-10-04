@@ -121,107 +121,54 @@ class DirectorySkill(NeonSkill):
             self.speak_dialog('unexpected_error')
         return None
 
-    def speak_shops(self, shop_info):
+    def speak_shops(self, shop):
         """
         Speaks shop info that was found.
         Substitutes time format for better pronunciation.
-        speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location})
+        speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "open": shop['open']})
         Shows shop label image in gui.
         Args:
             shop_info (list): found shops on user's
                                 request
         """
-        for shop in shop_info:
-            LOG.info(shop)
-            location = location_format(shop['location'])
-            hours = re.sub('(\d+)am.+(\d+)pm', r'from \1 A M to \2 P M', shop['hours'])
-            if 'level' in location.lower():
-                self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": 'on'})
-            else:
-                self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": ''})
-            LOG.info({"name": shop['name'], "hours": hours, "location": location})
-            # self.gui.show_image(shop['logo'], caption=f'{hours} {location}', title=shop['name'])
-
-    def location_selection(self, shop_info):
-        """
-        If there are several shops in found shops list
-        and user wants to get shop info on the certain
-        floor. If shop on that floor exists speaks
-        this shop info. Else speaks all shops info.
-        Args:
-            shop_info (list): found shops on user's
-                                request
-        Returns:
-            3, None (to ask for another shop info)
-        """
-        LOG.info(f"Shop by location selection {shop_info}")
-        floor = self.get_response('which_floor')
-        shops = shop_selection_by_floors(floor, shop_info)
-        if shops:
-            self.speak_shops(shops)
+        LOG.info(shop)
+        location = location_format(shop['location'])
+        hours = re.sub('(\d+)am.+(\d+)pm', r'from \1 A M to \2 P M', shop['hours'])
+        if 'level' in location.lower():
+            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": 'on', "open": shop['open']})
         else:
-            self.speak_dialog('no_shop_on_level')
-            #To do: the nearest shop search
-            self.speak_dialog('all_locations', {'n':len(shop_info), 'store_name':shop_info[0]['name']})
-            self.speak_shops(shop_info)
-        return 3, None
+            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": '', "open": shop['open']})
+        LOG.info({"name": shop['name'], "hours": hours, "location": location, "open": shop['open']})
+        # self.gui.show_image(shop['logo'], caption=f'{hours} {location}', title=shop['name'])
 
-    def speak_in_time_order(self, shop, open_info):
-        if open_info:
-            if shop[0]:
-                self.speak_dialog('closing_minutes', {'closing_minutes': shop[0]})
-            self.speak_shops([shop[2]])
-        else:
-            if shop[0] and shop[1]:
-                self.speak_dialog('opening_hours', {'wait_h': shop[1], 'wait_min': shop[0]})
-            elif shop[0]:
+
+    def speak_in_time_order(self, shop):
+        self.speak_shops(shop[2])
+        if shop[2]['open'] == 'open' and shop[0]:
+            self.speak_dialog('closing_minutes', {'closing_minutes': shop[0]})
+        elif shop[2]['open'] == 'closed' and shop[0] and shop[1]:
+            self.speak_dialog('opening_hours', {'wait_h': shop[1], 'wait_min': shop[0]})
+        elif shop[2]['open'] == 'closed' and shop[0]:
                 self.speak_dialog('opening_minutes', {'wait_min': shop[0]})
-            self.speak_shops([shop[2]])
-        return 3, None
 
-    def first_from_many_by_time(self, open, closed, shops_the_floor):
-        LOG.info(f'open: {open}, closed: {closed}')
-        first_shop = []
-        if len(open) != 0:
-            for shop in open:
-                if shop[2] in shops_the_floor:
+    def first_from_many(self, shop_info, shops_on_the_floor):
+        first_shop = {}
+        for shop in shop_info:
+            if shop[2]['open'] == 'open':
+                if shop in shops_on_the_floor:
                     first_shop = shop
-                    self.speak_dialog('open_now', {'shop_name': first_shop[2]['name']})
-                    self.speak_in_time_order(first_shop, True)
                     return first_shop
-        elif first_shop == []:
-                first_shop = open[0]
-                self.speak_dialog('open_now', {'shop_name': first_shop[2]['name']})
-                self.speak_in_time_order(first_shop, True)
+        for shop in shop_info:
+            if shop[2]['open'] == 'open':
+                first_shop = shop
                 return first_shop
-        else:
-            for shop in closed:
-                if shop[2] in shops_the_floor:
+        for shop in shop_info:
+            if shop in shops_on_the_floor:
                     first_shop = shop
-                    self.speak_dialog('closed_now', {'shop_name': first_shop[2]['name']})
-                    self.speak_in_time_order(first_shop, False)
                     return first_shop
-            first_shop = closed[0]
-            self.speak_dialog('closed_now', {'shop_name': first_shop[2]['name']})
-            self.speak_in_time_order(first_shop, False)
+            first_shop = shops_on_the_floor[0]
             return first_shop
-        
         return first_shop
-
-    def other_shops_by_time(self, open, closed, first_shop):
-        if first_shop in open:
-            for shop in open:
-                if shop != first_shop:
-                    self.speak_in_time_order(shop, True)
-            if len(closed) != 0:
-                self.speak_dialog('closed_now', {'shop_name': open[0][2]['name']})
-                for shop in closed:
-                    self.speak_in_time_order(shop, False) 
-        else:
-            for shop in closed:
-                if shop != first_shop:
-                    self.speak_in_time_order(shop, True)
-        return 3, None
         
     def find_shop(self, user_request, mall_link):
         """
@@ -268,11 +215,13 @@ class DirectorySkill(NeonSkill):
             elif len(shop_info) > 2:
                 LOG.info(f"more_than_two: n = {len(shop_info)}, store {shop_info[0]['name']}")
                 self.speak_dialog('more_than_two', {'n': len(shop_info), 'store': shop_info[0]["name"]})
-                # contains lists of open and closed shops
-                open, closed = time_calculation(shop_info, day_time, hour, min)
-                # speak first shop
+                # contains list of open and closed shops
+                shop_info = time_calculation(shop_info, day_time, hour, min)
+                # collect list of shops on user's floor
                 shops_on_the_floor = shop_selection_by_floors(self.user_floor, shop_info)
-                first_shop = self.first_from_many_by_time(open, closed, shops_on_the_floor)
+                # speak first shop
+                first_shop = self.first_from_many(shop_info, shops_on_the_floor)
+                self.speak_in_time_order(first_shop)
                 more_info = self.ask_yesno('more_shops_info')
                 if more_info == 'yes':
                     # ask for the way of selection: time, location, nothing
@@ -280,30 +229,45 @@ class DirectorySkill(NeonSkill):
                     if sorting_selection:
                         LOG.info(f'Users answer on sorting options: {sorting_selection}')
                         if self.voc_match(sorting_selection, "time"):
-                            return self.other_shops_by_time(open, closed, first_shop)
+                            for shop in shop_info:
+                                self.speak_in_time_order(shop)
+                            return 3, None
                         elif self.voc_match(sorting_selection, "location"):
                             LOG.info('Location sorting selected')
-                            return self.location_selection(shop_info)
-                        elif self.voc_match(sorting_selection, "no"):
+                            if shops_on_the_floor:
+                                for shop in shops_on_the_floor:
+                                    self.speak_in_time_order(shop)
+                                return 3, None
+                            else:
+                                self.speak_dialog('no_shop_on_level')
+                                self.speak_dialog('all_locations', {'store_name':shop_info[0]['name']})
+                                for shop in shop_info:
+                                    self.speak_in_time_order(shop)
+                                return 3, None
+                        else:
                             LOG.info('No sorting selected. Sorting by time on default.')
                             self.speak_dialog('by_time_sorting')
-                            return self.other_shops_by_time(open, closed, first_shop)
-                        else:
-                            LOG.info('Nothing matched. Sorting by time on default.')
-                            self.speak_dialog('by_time_sorting')
-                            return self.other_shops_by_time(open, closed, first_shop)
+                            for shop in shop_info:
+                                self.speak_in_time_order(shop)
+                            return 3, None
             else:
-                LOG.info(f"found shop {shop_info}")
+                LOG.info(f"found shop/s {shop_info}")
                 self.speak('I found')
-                self.speak_shops(shop_info)
+                shop_info = time_calculation(shop_info, day_time, hour, min)
+                LOG.info(f'shop info after time calculation {shop_info}')
+                for shop in shop_info:
+                    self.speak_in_time_order(shop)
         return 3, None
 
     def execute(self, user_request, mall_link):
         count = 0
         LOG.info('Start execute')
-        while count < 3 and user_request is not None and mall_link is not None:
+        while count < 2 and user_request is not None and mall_link is not None:
+            LOG.info(str(count))
             new_count, user_request = self.find_shop(user_request, mall_link)
             count = count + new_count
+        if count == 2 and user_request is not None and mall_link is not None:
+            new_count, user_request = self.find_shop(user_request, mall_link)
         user_request = self.start_again()
         LOG.info(str(user_request))
         if user_request is not None:

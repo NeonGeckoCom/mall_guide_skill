@@ -91,23 +91,31 @@ def time_calculation(shop_info, day_time, hour, min):
             open_time = int(normalized_time[0])
             close_time = int(normalized_time[1])
             LOG.info(f'work_time {work_time}')
-            parse_time = work_time.split('-')
-            LOG.info(f'parse_time {parse_time}')
+            LOG.info(f'open_time {open_time},  close_time {close_time}')
             # time left
             wait_h = open_time - hour - 1
             wait_min = 60 - min
             if day_time[1] == 'pm' and 0 < (close_time - hour) <= 1:
+                shop['open'] = 'open'
                 open_shops.append([wait_min, None, shop])
             elif day_time[1] == 'pm' and close_time > hour:
+                shop['open'] = 'open'
                 open_shops.append([None, None, shop])
             elif day_time[1] == 'am' and open_time <= hour:
+                shop['open'] = 'open'
                 open_shops.append([None, None, shop])
             elif day_time[1] == 'am' and hour < open_time:
                 if wait_h == 0:
+                    shop['open'] = 'closed'
                     closed_shops.append([wait_min, None, shop])
                 else:
+                    shop['open'] = 'closed'
                     closed_shops.append([wait_min, wait_h, shop])
             elif day_time[1] == 'am' and hour >= close_time:
+                shop['open'] = 'closed'
                 closed_shops.append([None, open_time, shop])
-        return open_shops, closed_shops
+        LOG.info(f'open and closed shops: {open_shops}, {closed_shops}')      
+        found_shops = open_shops + closed_shops
+        LOG.info(found_shops)
+        return found_shops
 
