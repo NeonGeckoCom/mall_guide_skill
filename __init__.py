@@ -208,7 +208,8 @@ class DirectorySkill(NeonSkill):
             LOG.info(f'file_path {file_path}')
             shop_info = get_shop_data(mall_link, user_request, file_path)
             LOG.info(f"shop list: {shop_info}")
-            day_time, hour, min = current_time_extraction()
+            # day_time, hour, min = current_time_extraction()
+            day_time, hour, min = ['9:15', 'pm'], 9, 15
             if len(shop_info) == 0:
                 user_request = self.get_response('shop_not_found')
                 return 1, user_request

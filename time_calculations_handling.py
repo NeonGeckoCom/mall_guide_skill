@@ -111,11 +111,12 @@ def time_calculation(shop_info, day_time, hour, min):
                 else:
                     shop['open'] = 'closed'
                     closed_shops.append([wait_min, wait_h, shop])
-            elif day_time[1] == 'am' and hour >= close_time:
+            elif day_time[1] == 'pm' and hour >= close_time:
                 shop['open'] = 'closed'
                 closed_shops.append([None, open_time, shop])
-        LOG.info(f'open and closed shops: {open_shops}, {closed_shops}')      
+        LOG.info(f'found shops open: {open_shops}')
+        LOG.info(f'found shops closed: {closed_shops}')
         found_shops = open_shops + closed_shops
-        LOG.info(found_shops)
+        LOG.info(f'open + closed: {found_shops}')
         return found_shops
 

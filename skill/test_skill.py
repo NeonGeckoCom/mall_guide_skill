@@ -38,6 +38,9 @@ from mycroft.skills.skill_loader import SkillLoader
 
 from mycroft_bus_client import Message
 
+# from .time_calculations_handling import current_time_extraction,\
+#                                         time_calculation
+
 
 class TestSkill(unittest.TestCase):
 
@@ -92,14 +95,26 @@ class TestSkill(unittest.TestCase):
                           {'context_key': 'MallParsing'})
         self.skill.user_request_handling(message)
 
+    def test_find_shop(self):
+        mall_link = "https://www.alamoanacenter.com/en/directory/"
+
+        user_request = 'starbucks'
+        new_count, user_request = self.skill.find_shop(user_request, mall_link)
+        self.assertEqual(new_count, 3)
+
+        user_request = 'bubble'
+        new_count, user_request = self.skill.find_shop(user_request, mall_link)
+        self.assertEqual(new_count, 1)
+
+
     # def test_en_time_extraction(self):
     #     shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
     #                     {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
     #     day_time, hour, min = ['10:15', 'am'], 10, 15
-    #     result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
+    #     result_shops = time_calculation(shop_info, day_time, hour, min)
     #     self.assertEqual(shop_info, result_shops)
 
-    #     day_time, hour, min = ['9:15', 'am'], 9, 15
+    #     day_time, hour, min = ['9:15', 'pm'], 9, 15
     #     result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
     #     self.assertEqual(shop_info[0], result_shops[0])
 
