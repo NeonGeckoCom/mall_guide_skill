@@ -1,8 +1,8 @@
 {
-    "title": "{Malls guide skill neon}",
+    "title": "{Mall guide skill neon}",
     "url": "https://github.com/NeonGeckoCom/mall_guide_skill",
-    "summary": "Skill for mall guiding",
-    "short_description": "Guides user inside the mall",
+    "summary": "Skill for guiding around the mall.",
+    "short_description": "Skill for guiding around the mall.",
     "description": "Skill parses mall web page and returns user: name, location and work hours of requested shop, store",
     "examples": [
         "where is apple?",
