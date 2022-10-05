@@ -235,7 +235,7 @@ class DirectorySkill(NeonSkill):
                             LOG.info('Location sorting selected')
                             if shops_on_the_floor:
                                 self.speak_dialog('shops_on_user_floor', {'n': len(shops_on_the_floor),
-                                                    'store_name': shop_info[0]["name"]})
+                                                    'store_name': shop_info[0][2]["name"]})
                                 for shop in shops_on_the_floor:
                                     self.speak_in_time_order(shop)
                                 if len(shops_on_the_floor) != len(shop_info):
