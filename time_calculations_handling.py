@@ -91,7 +91,6 @@ def time_calculation(shop_info, day_time, hour, min):
             open_time = int(normalized_time[0])
             close_time = int(normalized_time[1])
             LOG.info(f'work_time {work_time}')
-            LOG.info(f'open_time {open_time},  close_time {close_time}')
             # time left
             wait_h = open_time - hour - 1
             wait_min = 60 - min

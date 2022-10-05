@@ -67,6 +67,9 @@ class TestSkill(unittest.TestCase):
         cls.skill.speak = Mock()
         cls.skill.speak_dialog = Mock()
 
+        # Override gui show to test passed arguments
+        cls.skill.gui.show_image = Mock()
+
         # TODO: Put any skill method overrides here
 
     def setUp(self):
@@ -81,7 +84,6 @@ class TestSkill(unittest.TestCase):
 
     def test_en_skill_init(self):
         self.skill.ask_yesno = Mock(return_value="yes")
-        self.skill.gui._pages2uri = Mock()
         self.skill._start_mall_parser_prompt(
             Message('test', {'utterance': 'find Apple',
                                    'shop': 'Apple',

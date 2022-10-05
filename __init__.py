@@ -131,15 +131,14 @@ class DirectorySkill(NeonSkill):
             shop_info (list): found shops on user's
                                 request
         """
-        LOG.info(shop)
+        LOG.info(f"speak shops {shop}")
         location = location_format(shop['location'])
         hours = re.sub('(\d+)am.+(\d+)pm', r'from \1 A M to \2 P M', shop['hours'])
         if 'level' in location.lower():
             self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": 'on', "open": shop['open']})
         else:
             self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": '', "open": shop['open']})
-        LOG.info({"name": shop['name'], "hours": hours, "location": location, "open": shop['open']})
-        # self.gui.show_image(shop['logo'], caption=f'{hours} {location}', title=shop['name'])
+        self.gui.show_image(shop['logo'], caption=f'{hours} {location}', title=shop['name'])
 
 
     def speak_in_time_order(self, shop):
@@ -204,26 +203,25 @@ class DirectorySkill(NeonSkill):
         LOG.info(f'user_request {user_request}')
         LOG.info(f'mall_link {mall_link}')
         if user_request is not None:
-            file_path = self.file_system.path
-            LOG.info(f'file_path {file_path}')
-            shop_info = get_shop_data(mall_link, user_request, file_path)
-            LOG.info(f"shop list: {shop_info}")
-            # day_time, hour, min = current_time_extraction()
-            day_time, hour, min = ['9:15', 'pm'], 9, 15
+            dir_path = self.root_dir
+            shop_info = get_shop_data(mall_link, user_request, dir_path)
+            day_time, hour, min = current_time_extraction()
             if len(shop_info) == 0:
                 user_request = self.get_response('shop_not_found')
                 return 1, user_request
             elif len(shop_info) > 2:
                 LOG.info(f"more_than_two: n = {len(shop_info)}, store {shop_info[0]['name']}")
-                self.speak_dialog('more_than_two', {'n': len(shop_info), 'store': shop_info[0]["name"]})
+                self.speak_dialog('shops_amount', {'n': len(shop_info), 'store_name': shop_info[0]["name"]})
                 # contains list of open and closed shops
                 shop_info = time_calculation(shop_info, day_time, hour, min)
                 # collect list of shops on user's floor
                 shops_on_the_floor = shop_selection_by_floors(self.user_floor, shop_info)
+                LOG.info(f'shops_on_the_floor {shops_on_the_floor}')
                 # speak first shop
                 first_shop = self.first_from_many(shop_info, shops_on_the_floor)
                 self.speak_in_time_order(first_shop)
-                more_info = self.ask_yesno('more_shops_info')
+                # ask for other shops info showing
+                more_info = self.ask_yesno('more_shops_info', {'shop_name': shop_info[0][2]["name"]})
                 if more_info == 'yes':
                     # ask for the way of selection: time, location, nothing
                     sorting_selection = self.get_response('choose_selection')
@@ -236,12 +234,19 @@ class DirectorySkill(NeonSkill):
                         elif self.voc_match(sorting_selection, "location"):
                             LOG.info('Location sorting selected')
                             if shops_on_the_floor:
+                                self.speak_dialog('shops_on_user_floor', {'n': len(shops_on_the_floor),
+                                                    'store_name': shop_info[0]["name"]})
                                 for shop in shops_on_the_floor:
                                     self.speak_in_time_order(shop)
+                                if len(shops_on_the_floor) != len(shop_info):
+                                    self.speak_dialog('another_shop_locations')
+                                    for shop in shop_info:
+                                        if shop not in shops_on_the_floor:
+                                            self.speak_in_time_order(shop)
                                 return 3, None
                             else:
                                 self.speak_dialog('no_shop_on_level')
-                                self.speak_dialog('all_locations', {'store_name':shop_info[0]['name']})
+                                self.speak_dialog('all_locations', {'store_name':shop_info[0][2]['name']})
                                 for shop in shop_info:
                                     self.speak_in_time_order(shop)
                                 return 3, None
@@ -253,8 +258,8 @@ class DirectorySkill(NeonSkill):
                             return 3, None
             else:
                 LOG.info(f"found shop/s {shop_info}")
-                self.speak('I found')
                 shop_info = time_calculation(shop_info, day_time, hour, min)
+                self.speak_dialog('shops_amount', {'n': len(shop_info), 'store_name': shop_info[0][2]["name"]})
                 LOG.info(f'shop info after time calculation {shop_info}')
                 for shop in shop_info:
                     self.speak_in_time_order(shop)
