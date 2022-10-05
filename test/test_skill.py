@@ -38,9 +38,6 @@ from mycroft.skills.skill_loader import SkillLoader
 
 from mycroft_bus_client import Message
 
-# from .time_calculations_handling import current_time_extraction,\
-#                                         time_calculation
-
 
 class TestSkill(unittest.TestCase):
 
@@ -70,13 +67,9 @@ class TestSkill(unittest.TestCase):
         # Override gui show to test passed arguments
         cls.skill.gui.show_image = Mock()
 
-        # TODO: Put any skill method overrides here
-
     def setUp(self):
         self.skill.speak.reset_mock()
         self.skill.speak_dialog.reset_mock()
-
-        # TODO: Put any cleanup here that runs before each test case
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -108,27 +101,6 @@ class TestSkill(unittest.TestCase):
         new_count, user_request = self.skill.find_shop(user_request, mall_link)
         self.assertEqual(new_count, 1)
 
-    # def test_en_time_extraction(self):
-    #     shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
-    #                     {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
-    #     day_time, hour, min = ['10:15', 'am'], 10, 15
-    #     result_shops = time_calculation(shop_info, day_time, hour, min)
-    #     self.assertEqual(shop_info, result_shops)
-
-    #     day_time, hour, min = ['9:15', 'pm'], 9, 15
-    #     result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
-    #     self.assertEqual(shop_info[0], result_shops[0])
-
-    # def test_en_time_extraction(self):
-    #     shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
-    #                     {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'},
-    #                     {'name': 'ABC Stores', 'hours': '10am – 9pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
-
-    #     day_time, hour, min = ['9:15', 'pm'], 9, 15
-    #     print(self.skill.time_calculation(shop_info, False, day_time, hour, min))
-
-        # day_time, hour, min = ['8:15', 'pm'], 8, 15
-        # print(self.skill.time_calculation(shop_info, False, day_time, hour, min))
 
 
 if __name__ == '__main__':
