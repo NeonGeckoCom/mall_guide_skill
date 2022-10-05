@@ -116,7 +116,7 @@ class DirectorySkill(NeonSkill):
                 LOG.info(f'another shop {another_shop}')
                 return another_shop
         elif start_again == "no":
-            self.speak_dialog('no_shop_request')
+            return None
         else:
             self.speak_dialog('unexpected_error')
         return None
