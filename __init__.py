@@ -135,9 +135,9 @@ class DirectorySkill(NeonSkill):
         location = location_format(shop['location'])
         hours = re.sub('(\d+)am.+(\d+)pm', r'from \1 A M to \2 P M', shop['hours'])
         if 'level' in location.lower():
-            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": 'on', "open": shop['open']})
+            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "loc_amount": location, "on": 'on', "open": shop['open']})
         else:
-            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": '', "open": shop['open']})
+            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "loc_amount": location, "on": '', "open": shop['open']})
         self.gui.show_image(shop['logo'], caption=f'{hours} {location}', title=shop['name'])
 
 
@@ -211,7 +211,7 @@ class DirectorySkill(NeonSkill):
                 return 1, user_request
             elif len(shop_info) > 2:
                 LOG.info(f"more_than_two: n = {len(shop_info)}, store {shop_info[0]['name']}")
-                self.speak_dialog('shops_amount', {'n': len(shop_info), 'loc_amount': 'locations', 'store_name': shop_info[0][2]["name"]})
+                self.speak_dialog('shops_amount', {'n': len(shop_info), 'loc_amount': 'locations', 'store_name': shop_info[0]["name"]})
                 # contains list of open and closed shops
                 shop_info = time_calculation(shop_info, day_time, hour, min)
                 # collect list of shops on user's floor
