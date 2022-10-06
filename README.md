@@ -1,9 +1,9 @@
-# <img src='https://0000.us/klatchat/app/files/neon_images/icons/neon_skill.png' card_color="#FF8600" width="50" style="vertical-align:bottom">{Malls parser skill neon}
+# <img src='https://0000.us/klatchat/app/files/neon_images/icons/neon_skill.png' card_color="#FF8600" width="50" style="vertical-align:bottom">{Mall guide skill neon}
 ## Summary
-Skill for mall parsing
+Skill for guiding around the mall.
 
 ## Description
-Skill parses mall web page and returns user name, location and work hours of requested shop, store
+Skill parses mall web page and returns user: name, location and work hours of requested shop, store
 
 ## Examples
 - where is apple?

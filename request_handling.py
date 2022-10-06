@@ -40,14 +40,12 @@ import re
 import os
 import json
 
-from datetime import datetime
-
 
 class RequestHandler():
         
     caching_file = ''
 
-def find_cached_stores(user_request: str, url, file_path):
+def find_cached_stores(user_request: str, url, dir_path):
     """
     Check shop name existence in cache keys
     Args:
@@ -62,12 +60,13 @@ def find_cached_stores(user_request: str, url, file_path):
         {"name": "ABS stores", "time": "8am-10pm", "location": "2 level"}
         ]
     """
-    caching_file = file_path+'/cached_stores.json'
+    caching_file = os.path.join(dir_path, 'mall_cache.json')
     if os.path.isfile(caching_file) == False:
         LOG.info("Cache file doesn't exist")
-        caching_stores_in_mall(file_path, url)
-        return find_cached_stores(user_request, url, file_path)
+        caching_stores_in_mall(caching_file, url)
+        return find_cached_stores(user_request, url, caching_file)
     else:
+        LOG.info("Cache file exists")
         with open(caching_file, 'r', encoding='utf-8') as readfile:
             data = json.load(readfile)
             found_key = [key for key in data.keys() 
@@ -77,12 +76,12 @@ def find_cached_stores(user_request: str, url, file_path):
             if len(found_key) >=1 :
                 store_name = str(found_key[0])
                 LOG.info(f'Shop exists {data[store_name]}')
-                return data[store_name], data
+                return data[store_name]
             else:
                 LOG.info("Shop doesn't exist in cache")
-                return None, data
+                return None
 
-def caching_stores_in_mall(file_path, url):
+def caching_stores_in_mall(caching_file, url):
     """
     Creates caching file in the current class.
     Creates empty dictionary for cache. Parses
@@ -102,7 +101,6 @@ def caching_stores_in_mall(file_path, url):
         {"name": "ABS stores", "time": "8am-10pm", "location": "2 level"}
         ]}
     """
-    caching_file = file_path+'/cached_stores.json'
     LOG.info(f'caching_file {caching_file}')
     shop_cache = {}
     soup = parse(url)
@@ -140,26 +138,6 @@ def existing_lang_check(user_lang: str, url):
     else:
         LOG.info('This language is not supported')
         return False, link
-
-def curent_time_extraction():
-    """
-    Defines current time in utc timezone
-    Format: hour:minutes part of day (1:23 pm)
-
-    Returns:
-        day_time (list): contains splited time
-                            numerals and part of the day
-                            day_time -> ['07:19', 'am']
-        hour (int): current hour
-        min (int): current minute
-    """
-    now = datetime.now().time().strftime("%I:%M %p")
-    # now = datetime.today().strftime("%H:%M %p")
-    LOG.info(f'now {now}')
-    day_time = now.lower().split(' ')
-    exact_time = day_time[0].split(':')
-    hour, min = int(exact_time[0]), int(exact_time[1])
-    return day_time, hour, min
 
 def location_format(location):
     """
@@ -204,7 +182,7 @@ def shop_selection_by_floors(user_request, found_shops):
     """
     shops_by_floor = []
     for shop in found_shops:
-        numbers = re.findall(r'\d+', shop['location'])
+        numbers = re.findall(r'\d+', shop[2]['location'])
         if len(numbers) > 0:
             numbers = numbers[0]
             num = pronounce_number(int(numbers), ordinals=False)
@@ -227,7 +205,7 @@ def parse(url):
         LOG.info("Failed url parsing")
 
 
-def get_shop_data(url, user_request, file_path):
+def get_shop_data(url, user_request, dir_path):
     """
     Check existence of user's request store in cache
     if shop was found returns list with shop info,
@@ -244,8 +222,7 @@ def get_shop_data(url, user_request, file_path):
         : found_shops (list): found shops' info
     """
     # search for store existence in cache
-    LOG.info(file_path)
-    found_shops, data = find_cached_stores(user_request, url, file_path)
+    found_shops = find_cached_stores(user_request, url, dir_path)
     LOG.info(found_shops)
     if found_shops:
         LOG.info(f"found_shops: {found_shops}")
