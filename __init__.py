@@ -211,7 +211,7 @@ class DirectorySkill(NeonSkill):
                 return 1, user_request
             elif len(shop_info) > 2:
                 LOG.info(f"more_than_two: n = {len(shop_info)}, store {shop_info[0]['name']}")
-                self.speak_dialog('shops_amount', {'n': len(shop_info), 'store_name': shop_info[0]["name"]})
+                self.speak_dialog('shops_amount', {'n': len(shop_info), 'loc_amount': 'locations', 'store_name': shop_info[0][2]["name"]})
                 # contains list of open and closed shops
                 shop_info = time_calculation(shop_info, day_time, hour, min)
                 # collect list of shops on user's floor
@@ -259,7 +259,10 @@ class DirectorySkill(NeonSkill):
             else:
                 LOG.info(f"found shop/s {shop_info}")
                 shop_info = time_calculation(shop_info, day_time, hour, min)
-                self.speak_dialog('shops_amount', {'n': len(shop_info), 'store_name': shop_info[0][2]["name"]})
+                if len(shop_info) == 1:
+                    self.speak_dialog('shops_amount', {'n': len(shop_info), 'loc_amount': 'location', 'store_name': shop_info[0][2]["name"]})
+                else:
+                    self.speak_dialog('shops_amount', {'n': len(shop_info), 'loc_amount': 'locations', 'store_name': shop_info[0][2]["name"]})
                 LOG.info(f'shop info after time calculation {shop_info}')
                 for shop in shop_info:
                     self.speak_in_time_order(shop)
