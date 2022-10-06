@@ -135,9 +135,9 @@ class DirectorySkill(NeonSkill):
         location = location_format(shop['location'])
         hours = re.sub('(\d+)am.+(\d+)pm', r'from \1 A M to \2 P M', shop['hours'])
         if 'level' in location.lower():
-            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "loc_amount": location, "on": 'on', "open": shop['open']})
+            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": 'on', "open": shop['open']})
         else:
-            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "loc_amount": location, "on": '', "open": shop['open']})
+            self.speak_dialog('found_shop', {"name": shop['name'], "hours": hours, "location": location, "on": '', "open": shop['open']})
         self.gui.show_image(shop['logo'], caption=f'{hours} {location}', title=shop['name'])
 
 
