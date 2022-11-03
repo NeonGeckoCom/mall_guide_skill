@@ -1,2 +1,3 @@
-Sorry, this store doesn't exist in this mall. I am not sure I've understood what you said. Repeat, please.
-Sorry, I can not find this shop. I am not sure I've understood what you said. Repeat, please.
+Sorry, I can't find {{store_name}}, but maybe I misunderstood, could you ask again please?
+{{store_name}} isn't here, could you please repeat your query in case I misunderstood?
+I apologize, I can't find a listing for {{store_name}} here. Can you please say that again?
