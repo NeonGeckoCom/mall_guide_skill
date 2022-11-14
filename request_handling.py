@@ -49,13 +49,13 @@ class RequestHandler():
 
 def find_cached_stores(user_request: str, url, file_path):
     """
-    Check shop name existence in cache keys
+    Check store name existence in cache keys
     Args:
-        user_request (str): shop from user's message
+        user_request (str): store from user's message
     Returns:
         if file is empty -> None, {}
-        if shop wasn't found -> None, read data
-        if shop found ->  store_info (list), read data
+        if store wasn't found -> None, read data
+        if store found ->  store_info (list), read data
     Examples:
         [
         {"name": "ABS stores", "time": "8am-10pm", "location": "1 level"},
@@ -76,21 +76,21 @@ def find_cached_stores(user_request: str, url, file_path):
             LOG.info(f'found key {found_key}')
             if len(found_key) >=1 :
                 store_name = str(found_key[0])
-                LOG.info(f'Shop exists {data[store_name]}')
+                LOG.info(f'Store exists {data[store_name]}')
                 return data[store_name], data
             else:
-                LOG.info("Shop doesn't exist in cache")
+                LOG.info("Store doesn't exist in cache")
                 return None, data
 
 def caching_stores_in_mall(file_path, url):
     """
     Creates caching file in the current class.
     Creates empty dictionary for cache. Parses
-    all shops info. Creates dict key from shop
-    name. Value list of dicts with current shop
+    all stores info. Creates dict key from store
+    name. Value list of dicts with current store
     info.
-    If shop name already exists in created dict
-        append current shop dict to existing 
+    If store name already exists in created dict
+        append current store dict to existing 
         list.
     Writes created dict to created JSON file.
     Args:
@@ -104,22 +104,22 @@ def caching_stores_in_mall(file_path, url):
     """
     caching_file = file_path+'/cached_stores.json'
     LOG.info(f'caching_file {caching_file}')
-    shop_cache = {}
+    store_cache = {}
     soup = parse(url)
-    for shop in soup.find_all(attrs={"class": "directory-tenant-card"}):
-            logo = shop.find_next("img").get('src')
-            info = shop.find_next(attrs={"class": "tenant-info-container"})
+    for store in soup.find_all(attrs={"class": "directory-tenant-card"}):
+            logo = store.find_next("img").get('src')
+            info = store.find_next(attrs={"class": "tenant-info-container"})
             name = info.find_next(attrs={"class": "tenant-info-row"}).text.strip().strip('\n')
             hours = info.find_next(attrs={"class": "tenant-hours-container"}).text.strip('\n')
             location = info.find_next(attrs={"tenant-location-container"}).text.strip('\n')
-            shop_data = {'name': name, 'hours': hours, 'location': location, 'logo': logo}
-            if name in shop_cache.keys():
-                shop_cache[name].append(shop_data)                
+            store_data = {'name': name, 'hours': hours, 'location': location, 'logo': logo}
+            if name in store_cache.keys():
+                store_cache[name].append(store_data)                
             else:
-                shop_cache[name] = [shop_data]
+                store_cache[name] = [store_data]
     with open(caching_file,
                                 'w+') as outfile:
-        json.dump(shop_cache, outfile, ensure_ascii=False)
+        json.dump(store_cache, outfile, ensure_ascii=False)
     os.chmod(caching_file, 777)
     LOG.info("Created mall's cache")
 
@@ -167,7 +167,7 @@ def location_format(location):
     formats them to numeral words.
     Args:
         location (str): location info
-        from shops info
+        from stores info
     Returns:
         if digits were found:
             pronounced (str): utterance with
@@ -186,32 +186,32 @@ def location_format(location):
     else:
         return location
 
-def shop_selection_by_floors(user_request, found_shops):
+def store_selection_by_floors(user_request, found_stores):
     """
-    If there are several shops in found shops list
-    and user agrees to select shop by floor.
+    If there are several stores in found stores list
+    and user agrees to select store by floor.
     Finds all digits in store's location and
     formats them to ordinal and cardinal numerals.
     Matches formated numerals with user's request.
-    If shop was found appends it to the new found
+    If store was found appends it to the new found
     list.
     Args:
         user_request (str): floor from user
-        found_shops (list): found shops on user's
+        found_stores (list): found stores on user's
         request
     Returns:
-        shops_by_floor (list): shops that was found by floor
+        stores_by_floor (list): stores that was found by floor
     """
-    shops_by_floor = []
-    for shop in found_shops:
-        numbers = re.findall(r'\d+', shop['location'])
+    stores_by_floor = []
+    for store in found_stores:
+        numbers = re.findall(r'\d+', store['location'])
         if len(numbers) > 0:
             numbers = numbers[0]
             num = pronounce_number(int(numbers), ordinals=False)
             num_ordinal = pronounce_number(int(numbers), ordinals=True)
             if num in user_request or num_ordinal in user_request:
-                shops_by_floor.append(shop)
-    return shops_by_floor
+                stores_by_floor.append(store)
+    return stores_by_floor
 
 def parse(url):
     headers = {
@@ -227,10 +227,10 @@ def parse(url):
         LOG.info("Failed url parsing")
 
 
-def get_shop_data(url, user_request, file_path):
+def get_store_data(url, user_request, file_path):
     """
     Check existence of user's request store in cache
-    if shop was found returns list with shop info,
+    if store was found returns list with store info,
     else does parsing of mall's web-page.
     Matches the name of existing stores with user's
     request. If store was found, returns list with
@@ -241,15 +241,15 @@ def get_shop_data(url, user_request, file_path):
         url (str): mall link from hardcoded in init.py
         user_request (str): utterance from stt parsing
     Returns:
-        : found_shops (list): found shops' info
+        : found_stores (list): found stores' info
     """
     # search for store existence in cache
     LOG.info(file_path)
-    found_shops, data = find_cached_stores(user_request, url, file_path)
-    LOG.info(found_shops)
-    if found_shops:
-        LOG.info(f"found_shops: {found_shops}")
-        return found_shops
+    found_stores, data = find_cached_stores(user_request, url, file_path)
+    LOG.info(found_stores)
+    if found_stores:
+        LOG.info(f"found_stores: {found_stores}")
+        return found_stores
     else:
         return []
 
