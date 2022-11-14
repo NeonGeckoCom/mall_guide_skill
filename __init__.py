@@ -133,7 +133,7 @@ class DirectorySkill(NeonSkill):
             hours = re.sub('(\d+)am.+(\d+)pm', r'from \1 A M to \2 P M', store['hours'])
             self.speak_dialog('found_store', {"name": store['name'], "hours": hours, "location": location})
             LOG.info({"name": store['name'], "hours": hours, "location": location})
-            #self.gui.show_image(store['logo'], caption=f'{hours} {location}', title=store['name'])
+            self.gui.show_image(store['logo'], caption=f'{hours} {location}', title=store['name'])
 
     def location_selection(self, store_info):
         """
@@ -147,7 +147,7 @@ class DirectorySkill(NeonSkill):
         Returns:
             3, None (to ask for another store info)
         """
-        LOG.info(f"Shop by location selection {store_info}")
+        LOG.info(f"store by location selection {store_info}")
         floor = self.get_response('which_floor')
         stores = store_selection_by_floors(floor, store_info)
         if stores:
@@ -211,7 +211,7 @@ class DirectorySkill(NeonSkill):
         Examples:
             work time 9am-10pm
             user's time 8am
-            Prompt: 'Shop is closed now. Opens in 1 hour'
+            Prompt: 'store is closed now. Opens in 1 hour'
         """
         for store in store_info:
             work_time = store['hours']
@@ -238,16 +238,12 @@ class DirectorySkill(NeonSkill):
                 self.speak_stores([store])
             else:
                 if day_time[1] == 'am' and hour < open_time:
-                    if wait_h == 0:
-                        LOG.info(f'{store_name} is closed now. Opens in {wait_min} minutes')
-                        self.speak_dialog('opening_minutes', {"store_name": store_name, "wait_min": wait_min})
-                    else:
-                        duration = wait_h * 3600 + wait_min * 60
-                        formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
-                        LOG.info(f'{store_name} is closed now. Opens in {formated_duration} ')
-                        self.speak_dialog('waiting_for_opening', {"store_name": store_name, 'duration': formated_duration})
+                    duration = wait_h * 3600 + wait_min * 60
+                    formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
+                    LOG.info(f'{store_name} is closed now. store opens in {formated_duration}')
+                    self.speak_dialog('waiting_for_opening', {"store_name": store_name, 'duration': formated_duration})
                 elif hour >= close_time:
-                    LOG.info(f'{store_name} is closed now. Shop opens at {open_time}')
+                    LOG.info(f'{store_name} is closed now. store opens at {open_time}')
                     self.speak_dialog('closed_now', {'store_name': store_name, 'open_time': open_time})
                 LOG.info([store])
                 self.speak_stores([store])
@@ -269,7 +265,7 @@ class DirectorySkill(NeonSkill):
                 of open stores is 0)
 
         """
-        LOG.info(f"Shop by time selection {store_info}")
+        LOG.info(f"store by time selection {store_info}")
         day_time, hour, min = curent_time_extraction()
         # day_time, hour, min = ['11:15', 'pm'], 11, 15
         open_stores = self.open_stores_search(store_info, day_time, hour, min)
