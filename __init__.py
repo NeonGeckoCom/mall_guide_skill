@@ -34,10 +34,7 @@ from .request_handling import existing_lang_check, get_store_data, \
     location_format, \
     curent_time_extraction
 import re
-import lingua_franca
 from lingua_franca.format import nice_duration
-
-lingua_franca.load_language('en')
 
 
 class DirectorySkill(NeonSkill):
@@ -45,7 +42,10 @@ class DirectorySkill(NeonSkill):
     def __init__(self):
         super(DirectorySkill, self).__init__(name="DirectorySkill")
         self.url = "https://www.alamoanacenter.com/en/directory/"
-        self.request_lang = self.lang.split('-')[0]
+
+    @property
+    def request_lang(self):
+        return self.lang.split('-')[0]
 
     def initialize(self):
         # When first run or prompt not dismissed, wait for load and prompt user
@@ -267,7 +267,6 @@ class DirectorySkill(NeonSkill):
         """
         LOG.info(f"store by time selection {store_info}")
         day_time, hour, min = curent_time_extraction()
-        # day_time, hour, min = ['11:15', 'pm'], 11, 15
         open_stores = self.open_stores_search(store_info, day_time, hour, min)
         if len(open_stores) >= 1:
             return self.time_calculation(open_stores, True, day_time, hour, min)
@@ -316,10 +315,11 @@ class DirectorySkill(NeonSkill):
             LOG.info(f"I found {len(store_info)} stores")
             LOG.info(f"store list: {store_info}")
             if len(store_info) == 0:
-                user_request = self.get_response('store_not_found')
+                user_request = self.get_response('store_not_found', {"store_name": user_request})
                 return 1, user_request
             elif len(store_info) > 1:
                 self.speak_dialog('more_than_one')
+
                 # ask for the way of selection: time, location, nothing
                 sorting_selection = self.get_response('choose_selection')
                 if sorting_selection:

@@ -35,8 +35,10 @@ from mock import Mock
 from ovos_utils.messagebus import FakeBus
 
 from mycroft.skills.skill_loader import SkillLoader
-
 from mycroft_bus_client import Message
+
+import lingua_franca
+lingua_franca.load_language('en')
 
 
 class TestSkill(unittest.TestCase):
@@ -63,22 +65,39 @@ class TestSkill(unittest.TestCase):
         # Override speak and speak_dialog to test passed arguments
         cls.skill.speak = Mock()
         cls.skill.speak_dialog = Mock()
-
-        # TODO: Put any skill method overrides here
+        
 
     def setUp(self):
+
+        class MockGui:
+            def __init__(self):
+                self._data = dict()
+                self.show_image = Mock()
+
+            def __setitem__(self, key, value):
+                self._data[key] = value
+
+            def __getitem__(self, item):
+                return self._data[item]
+
+            @staticmethod
+            def clear():
+                pass  
+        
         self.skill.speak.reset_mock()
         self.skill.speak_dialog.reset_mock()
 
-        # TODO: Put any cleanup here that runs before each test case
+        mock_gui = MockGui()
+        self.skill.gui = mock_gui
+
 
     @classmethod
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.test_fs)
 
     def test_en_skill_init(self):
+
         self.skill.ask_yesno = Mock(return_value="yes")
-        self.skill.gui._pages2uri = Mock()
         self.skill._start_mall_parser_prompt(
             Message('test', {'utterance': 'find ABC stores',
                              'store': 'ABC stores',
@@ -97,6 +116,7 @@ class TestSkill(unittest.TestCase):
                       'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'},
                      {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing',
                       'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
+        
         day_time, hour, min = ['10:15', 'am'], 10, 15
         result_stores = self.skill.open_stores_search(store_info, day_time, hour, min)
         self.assertEqual(store_info, result_stores)
@@ -110,10 +130,10 @@ class TestSkill(unittest.TestCase):
                       'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'},
                      {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing',
                       'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
+        
         day_time, hour, min = ['6:15', 'am'], 6, 15
         open = False
-        waiting_time = self.skill.time_calculation(store_info, open, day_time, hour, min)
-        print(waiting_time)
+        self.skill.time_calculation(store_info, open, day_time, hour, min)
 
 
 if __name__ == '__main__':
