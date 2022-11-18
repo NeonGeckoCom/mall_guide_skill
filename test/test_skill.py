@@ -112,12 +112,12 @@ class TestSkill(unittest.TestCase):
         self.skill.user_request_handling(message)
 
     def test_en_time_extraction(self):
-        store_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage',
+        store_info = [{'name': 'ABC Stores', 'hours': '9:30am – 9pm', 'location': 'Street Level 1, near Centerstage',
                       'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'},
-                     {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing',
+                     {'name': 'ABC Stores', 'hours': '10:30am – 8pm', 'location': 'Street Level 1, in the Ewa Wing',
                       'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
         
-        day_time, hour, min = ['10:15', 'am'], 10, 15
+        day_time, hour, min = ['10:15', 'am'], 10 , 15
         result_stores = self.skill.open_stores_search(store_info, day_time, hour, min)
         self.assertEqual(store_info, result_stores)
 
@@ -126,12 +126,12 @@ class TestSkill(unittest.TestCase):
         self.assertEqual(store_info[0], result_stores[0])
 
     def test_en_hours_extraction(self):
-        store_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage',
+        store_info = [{'name': 'ABC Stores', 'hours': '9:30am – 9pm', 'location': 'Street Level 1, near Centerstage',
                       'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'},
-                     {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing',
+                     {'name': 'ABC Stores', 'hours': '10:30am – 8pm', 'location': 'Street Level 1, in the Ewa Wing',
                       'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
         
-        day_time, hour, min = ['6:15', 'am'], 6, 15
+        day_time, hour, min = ['9:15', 'am'], 9, 15
         open = False
         self.skill.time_calculation(store_info, open, day_time, hour, min)
 

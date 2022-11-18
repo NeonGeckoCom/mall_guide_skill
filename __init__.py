@@ -130,7 +130,8 @@ class DirectorySkill(NeonSkill):
         for store in store_info:
             LOG.info(store)
             location = location_format(store['location'])
-            hours = re.sub('(\d+)am.+(\d+)pm', r'from \1 A M to \2 P M', store['hours'])
+            hours = re.sub('(\d+)\:*(\d*)am.+(\d+)pm', r'from \1 \2 A M to \3 P M', store['hours'])
+            LOG.info(f'changed hours {hours}')
             self.speak_dialog('found_store', {"name": store['name'], "hours": hours, "location": location})
             LOG.info({"name": store['name'], "hours": hours, "location": location})
             self.gui.show_image(store['logo'], caption=f'{hours} {location}', title=store['name'])
@@ -170,12 +171,16 @@ class DirectorySkill(NeonSkill):
         open_stores = []
         LOG.info(f"User's time {day_time, hour, min}")
         for store in store_info:
-            parse_time = re.findall(r'(\d+)+[am|pm]', store['hours'])
+            parse_time = re.findall(r'(\d+\:*\d*)+[am|pm]', store['hours'])
             LOG.info(f'Parsed time {parse_time}')
-            open_time = int(parse_time[0])
+            open_hour_mins = re.findall(r'(\d+)', parse_time[0])
+            LOG.info(f'Parsed hour {open_hour_mins}')
+            open_time = int(open_hour_mins[0])
+            open_minutes = int(open_hour_mins[1])
             close_time = int(parse_time[1])
             if open_time <= hour < close_time:
-                open_stores.append(store)
+                if open_minutes >= min:
+                    open_stores.append(store)
             elif day_time[1] == 'am' and open_time <= hour:
                 open_stores.append(store)
         return open_stores
