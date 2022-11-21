@@ -169,24 +169,37 @@ class DirectorySkill(NeonSkill):
            store_info (list): open stores
        """
         open_stores = []
-        LOG.info(f"User's time {day_time, hour, min}")
+        LOG.info(f"User's time {store['hours']}")
         for store in store_info:
-            parse_time = re.findall(r'(\d+\:*\d*)+[am|pm]', store['hours'])
-            LOG.info(f'Parsed time {parse_time}')
-            open_hour_mins = re.findall(r'(\d+)', parse_time[0])
-            LOG.info(f'Parsed hour {open_hour_mins}')
-            open_time = int(open_hour_mins[0])
-            open_minutes = int(open_hour_mins[1])
-            close_time = int(parse_time[1])
-            if open_time <= hour < close_time:
-                if open_minutes >= min:
+            formated_work_time = self.time_normalization(store['hours'])
+            LOG.info(f'formated_work_time {formated_work_time}')
+            if day_time[1] == 'am' and formated_work_time[0][0] <= hour:
+                if formated_work_time[0][1] > min:
                     open_stores.append(store)
-            elif day_time[1] == 'am' and open_time <= hour:
-                open_stores.append(store)
+            elif day_time[1] == 'pm' and formated_work_time[1][0] <= hour:
+                if formated_work_time[1][1] > min:
+                    open_stores.append(store)
         return open_stores
 
+    def time_normalization(self, work_time):
+        parse_time = re.findall(r'(\d+\:*\d*)+', work_time)
+
+        open_hour_mins = re.findall(r'(\d+)', parse_time[0])
+        open_hour = int(open_hour_mins[0])
+        if len(open_hour_mins) > 1:
+            open_minutes = int(open_hour_mins[1])
+        else: 
+            open_minutes = 0
+
+        close_hour_mins = re.findall(r'(\d+)', parse_time[1])
+        close_hour = int(close_hour_mins[0])
+        if len(close_hour_mins) > 1:
+            close_minutes = int(close_hour_mins[1])
+        else: 
+            close_minutes = 0
+        return ([open_hour, open_minutes], [close_hour, close_minutes])
+
     def time_calculation(self, store_info, open, day_time, hour, min):
-        #Todo: add logic if store opens and closes not at am-pm time period
         """
         Calculates time difference between user's current time
         and store working hours.
@@ -195,7 +208,7 @@ class DirectorySkill(NeonSkill):
                 many minutes left. Speaks store info.
             Else speaks corresponging dialog.
             Speaks store info.
-        If 'open' argument is False:
+        If 'closed' argument is False:
             Speaks corresponding dialog.
             If user is one hour or less before opening hours
                 speaks how much time is left for waiting.
@@ -220,19 +233,19 @@ class DirectorySkill(NeonSkill):
         """
         for store in store_info:
             work_time = store['hours']
-            normalized_time = re.findall(r'(\d+)[am|pm]', work_time)
-            open_time = int(normalized_time[0])
-            close_time = int(normalized_time[1])
-            LOG.info(f'work_time {work_time}')
             store_name = store['name']
-            parse_time = work_time.split('-')
-            LOG.info(f'parse_time {parse_time}')
+            LOG.info(f'Store work time  {work_time}')
+            normalized_time = self.time_normalization(work_time)
+            LOG.info(f'Normalixed time {normalized_time}')
             # time left
-            wait_h = open_time - hour - 1
-            wait_min = 60 - min
+            wait_h_opening = normalized_time[0][0] - hour
+            wait_min_opening = normalized_time[0][1] - min 
+
+            wait_h_closing = normalized_time[1][0] - hour
+            wait_min_closing = normalized_time[1][1] - min
             if open:
-                if day_time[1] == 'pm' and 0 < (close_time - hour) <= 1:
-                    duration = wait_min * 60
+                if day_time[1] == 'pm' and 0 <=  wait_h_closing < 1:
+                    duration = wait_min_closing * 60
                     formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
                     LOG.info(f'{store_name} closes in {formated_duration}.')
                     self.speak_dialog('time_before_closing', {"store_name": store_name, "duration": formated_duration})
@@ -242,12 +255,13 @@ class DirectorySkill(NeonSkill):
                 LOG.info([store])
                 self.speak_stores([store])
             else:
-                if day_time[1] == 'am' and hour < open_time:
-                    duration = wait_h * 3600 + wait_min * 60
+                if day_time[1] == 'am':
+                    duration = wait_h_opening * 3600 + wait_min_opening * 60
                     formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
                     LOG.info(f'{store_name} is closed now. store opens in {formated_duration}')
                     self.speak_dialog('waiting_for_opening', {"store_name": store_name, 'duration': formated_duration})
-                elif hour >= close_time:
+                elif hour >= normalized_time[1][0] and wait_min_closing > normalized_time[1][1]:
+                    open_time = work_time.split('-')[0]
                     LOG.info(f'{store_name} is closed now. store opens at {open_time}')
                     self.speak_dialog('closed_now', {'store_name': store_name, 'open_time': open_time})
                 LOG.info([store])
