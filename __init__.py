@@ -169,7 +169,6 @@ class DirectorySkill(NeonSkill):
            store_info (list): open stores
        """
         open_stores = []
-        LOG.info(f"User's time {store['hours']}")
         for store in store_info:
             formated_work_time = self.time_normalization(store['hours'])
             LOG.info(f'formated_work_time {formated_work_time}')
