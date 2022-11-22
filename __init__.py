@@ -243,16 +243,24 @@ class DirectorySkill(NeonSkill):
 
             wait_h_closing = normalized_time[1][0] - hour
             wait_min_closing = normalized_time[1][1] - min
+            LOG.info(f'wait_h_closing {wait_h_closing}')
+            LOG.info(f'wait_min_closing {wait_min_closing}')
+            LOG.info(f'day_time {day_time[1]}')
             if open:
-                if day_time[1] == 'pm' and 0 <=  wait_h_closing < 1:
-                    duration = wait_min_closing * 60
+                if day_time[1] == 'pm':
+                    if 0 == wait_h_closing and wait_min_closing > 0:
+                        duration = wait_min_closing * 60
+                    elif wait_h_closing == 1 and wait_min_closing < 0:
+                        wait_min_closing = 60 - min
+                        duration = wait_min_closing * 60
+                    elif wait_h_closing == 1 and wait_min_closing == 0:
+                        duration = 60 * 60
                     formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
                     LOG.info(f'{store_name} closes in {formated_duration}.')
                     self.speak_dialog('time_before_closing', {"store_name": store_name, "duration": formated_duration})
                 else:
                     LOG.info(f'{store_name} is open.')
                     self.speak_dialog('open_now', {'store_name': store_name})
-                LOG.info([store])
                 self.speak_stores([store])
             else:
                 if day_time[1] == 'am':
@@ -260,11 +268,11 @@ class DirectorySkill(NeonSkill):
                     formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
                     LOG.info(f'{store_name} is closed now. store opens in {formated_duration}')
                     self.speak_dialog('waiting_for_opening', {"store_name": store_name, 'duration': formated_duration})
-                elif hour >= normalized_time[1][0] and wait_min_closing > normalized_time[1][1]:
-                    open_time = work_time.split('-')[0]
+                else:
+                    open_time = work_time.split(' – ')[0]
+                    open_time = re.sub('(\d+)\:*(\d*)am', r'\1 \2 A M', open_time)
                     LOG.info(f'{store_name} is closed now. store opens at {open_time}')
                     self.speak_dialog('closed_now', {'store_name': store_name, 'open_time': open_time})
-                LOG.info([store])
                 self.speak_stores([store])
         return 3, None
 
