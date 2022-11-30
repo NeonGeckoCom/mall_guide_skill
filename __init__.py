@@ -269,6 +269,7 @@ class DirectorySkill(NeonSkill):
                     self.speak_dialog('open_now', {'store_name': store_name})
                 self.speak_stores([store])
             else:
+                LOG.info(f'{store_name} is closed.')
                 if day_time[1] == 'am':
                     duration = wait_h_opening * 3600 + wait_min_opening * 60
                     formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
@@ -299,8 +300,8 @@ class DirectorySkill(NeonSkill):
 
         """
         LOG.info(f"store by time selection {store_info}")
-        #day_time, hour, min = curent_time_extraction()
-        day_time, hour, min = ['7:55', 'pm'], 7, 55
+        day_time, hour, min = curent_time_extraction()
+        #day_time, hour, min = ['10:55', 'pm'], 10, 55
         open_stores = self.open_stores_search(store_info, day_time, hour, min)
         if len(open_stores) >= 1:
             return self.time_calculation(open_stores, True, day_time, hour, min)

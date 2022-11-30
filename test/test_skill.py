@@ -131,7 +131,7 @@ class TestSkill(unittest.TestCase):
                      {'name': 'ABC Stores', 'hours': '10:30am – 8:30pm', 'location': 'Street Level 1, in the Ewa Wing',
                       'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
         
-        day_time, hour, min = ['6:00', 'pm'], 6, 00
+        day_time, hour, min = ['10:00', 'pm'], 10, 00
         result_stores = self.skill.open_stores_search(store_info, day_time, hour, min)
         for store in store_info:
             if store in result_stores:
