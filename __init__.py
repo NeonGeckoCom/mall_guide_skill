@@ -42,6 +42,7 @@ class DirectorySkill(NeonSkill):
     def __init__(self):
         super(DirectorySkill, self).__init__(name="DirectorySkill")
         self.url = "https://www.alamoanacenter.com/en/directory/"
+        self._speak_timeout = 60
 
     @property
     def request_lang(self):
@@ -169,15 +170,19 @@ class DirectorySkill(NeonSkill):
            store_info (list): open stores
        """
         open_stores = []
+        LOG.info(f'users_time {day_time, hour, min}')
         for store in store_info:
             formated_work_time = self.time_normalization(store['hours'])
             LOG.info(f'formated_work_time {formated_work_time}')
             if day_time[1] == 'am' and formated_work_time[0][0] <= hour:
                 if formated_work_time[0][1] > min:
                     open_stores.append(store)
-            elif day_time[1] == 'pm' and formated_work_time[1][0] <= hour:
+            elif day_time[1] == 'pm' and formated_work_time[1][0] == hour:
                 if formated_work_time[1][1] > min:
                     open_stores.append(store)
+            elif day_time[1] == 'pm' and formated_work_time[1][0] > hour:
+                open_stores.append(store)
+        LOG.info(f'open stores {open_stores}')            
         return open_stores
 
     def time_normalization(self, work_time):
@@ -246,6 +251,7 @@ class DirectorySkill(NeonSkill):
             LOG.info(f'wait_min_closing {wait_min_closing}')
             LOG.info(f'day_time {day_time[1]}')
             if open:
+                duration = None
                 if day_time[1] == 'pm':
                     if 0 == wait_h_closing and wait_min_closing > 0:
                         duration = wait_min_closing * 60
@@ -254,6 +260,7 @@ class DirectorySkill(NeonSkill):
                         duration = wait_min_closing * 60
                     elif wait_h_closing == 1 and wait_min_closing == 0:
                         duration = 60 * 60
+                if duration:
                     formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
                     LOG.info(f'{store_name} closes in {formated_duration}.')
                     self.speak_dialog('time_before_closing', {"store_name": store_name, "duration": formated_duration})
@@ -292,7 +299,8 @@ class DirectorySkill(NeonSkill):
 
         """
         LOG.info(f"store by time selection {store_info}")
-        day_time, hour, min = curent_time_extraction()
+        #day_time, hour, min = curent_time_extraction()
+        day_time, hour, min = ['7:55', 'pm'], 7, 55
         open_stores = self.open_stores_search(store_info, day_time, hour, min)
         if len(open_stores) >= 1:
             return self.time_calculation(open_stores, True, day_time, hour, min)
