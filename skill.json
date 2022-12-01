@@ -1,6 +1,6 @@
 {
     "title": "{Malls parser skill neon}",
-    "url": "https://github.com/NeonGeckoCom/skill-directory",
+    "url": "https://github.com/NeonGeckoCom/mall_guide_skill",
     "summary": "Skill for mall parsing",
     "short_description": "Skill for mall parsing",
     "description": "Skill parses mall web page and returns user name, location and work hours of requested shop, store",
@@ -18,6 +18,7 @@
             "neon-utils~=1.0",
             "numpy",
             "ovos-lingua-franca",
+            "ovos_utils~=0.0,>=0.0.27a4",
             "requests"
         ],
         "system": {},
@@ -43,7 +44,7 @@
         "NeonGeckoCom",
         "NeonMariia"
     ],
-    "skillname": "skill-directory",
+    "skillname": "mall_guide_skill",
     "authorname": "NeonGeckoCom",
     "foldername": null
 }
