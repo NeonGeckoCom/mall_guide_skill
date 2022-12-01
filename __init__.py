@@ -135,7 +135,12 @@ class DirectorySkill(NeonSkill):
             LOG.info(f'changed hours {hours}')
             self.speak_dialog('found_store', {"name": store['name'], "hours": hours, "location": location})
             LOG.info({"name": store['name'], "hours": hours, "location": location})
-            self.gui.show_image(store['logo'], caption=f'{hours} {location}', title=store['name'])
+            if store['logo'] and store['logo'].startswith('http'):
+                self.gui.show_image(store['logo'],
+                                    caption=f'{hours} {location}',
+                                    title=store['name'],
+                                    fill="PreserveAspectFit",
+                                    background_color="#FFFFFF")
 
     def location_selection(self, store_info):
         """

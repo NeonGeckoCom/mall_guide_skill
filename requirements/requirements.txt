@@ -4,3 +4,4 @@ bs4
 requests
 ovos-lingua-franca
 datetime
+ovos_utils~=0.0,>=0.0.27a4
