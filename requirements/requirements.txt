@@ -1,5 +1,5 @@
 numpy
-neon-utils==1.1.3a6
+neon-utils~=1.0
 bs4
 requests
 ovos-lingua-franca
