@@ -30,11 +30,14 @@
 from neon_utils.skills.neon_skill import NeonSkill, LOG
 # from neon_utils.skills.kiosk_skill import KioskSkill
 from mycroft.skills.core import intent_file_handler
-from .request_handling import existing_lang_check, get_store_data, \
-    store_selection_by_floors, \
-    location_format, \
-    left_lime_calculation, \
-    time_refactoring
+from .request_handling import existing_lang_check, get_store_data
+
+from .time_processing import left_lime_calculation, \
+    time_refactoring, \
+    open_stores_search
+
+from .location_processing import store_selection_by_floors, \
+    location_format
 
 import re
 from lingua_franca.format import nice_duration
@@ -195,45 +198,11 @@ class DirectorySkill(NeonSkill):
         now_h = int(now_h_m[0])
         now_m = int(now_h_m[1])
         # open stores search
-        open_stores = self.open_stores_search(store_info, now_h, now_m)
+        open_stores = open_stores_search(store_info, now_h, now_m)
         if len(open_stores) >= 1:
             return self.time_calculation(open_stores, True, now_h, now_m)
         else:
             return self.time_calculation(store_info, False, now_h, now_m)
-
-    def open_stores_search(self, store_info, now_h, now_m):
-        """
-       Selects open stores. Collects the list of
-       open stores else return empty list.
-       Args:
-           store_info (list): found stores on user's
-                               request
-            now (str): current user's time
-       Returns:
-           store_info (list): open stores
-       """
-        open_stores = []
-        LOG.info(f" user's current time {now_h, now_m}")
-
-        for store in store_info:
-            # formating store's work hours 
-            time_splited = store['hours'].split(' – ')
-            open = time_refactoring(time_splited[0])
-            close = time_refactoring(time_splited[1])
-            LOG.info(f'formated_work_time {open, close}')
-
-            if now_h == open[0]:
-                if now_m >= open[1]:
-                    open_stores.append(store)
-            elif now_h > open[0]:
-                open_stores.append(store)
-            elif now_h == close[0]:
-                if now_m < close[1]:
-                    open_stores.append(store)
-            elif now_h < close[0]:
-                open_stores.append(store)
-        LOG.info(f'open stores {open_stores}')            
-        return open_stores
 
     def time_calculation(self, store_info, open, now_h, now_m):
         """

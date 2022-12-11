@@ -32,22 +32,34 @@ import bs4
 from neon_utils.skills.neon_skill import LOG
 import urllib.request
 
-import lingua_franca
-from lingua_franca.format import pronounce_number
-lingua_franca.load_language('en')
-
-import re
 import os
 import json
-
-from datetime import datetime
-import pytz
 
 
 class RequestHandler():
         
     caching_file = ''
 
+
+def existing_lang_check(user_lang: str, url):
+    """
+    Check existence of user's language
+    on the mall web-page
+    Args:
+        user_lang (str): user's lang in ISO 639-1
+    Returns:
+        bool: True if lang exists
+    """
+    link = url+user_lang+'/directory/'
+    response = requests.get(link)
+    if response.status_code == 200:
+        LOG.info('This language is supported')
+        return True, link
+    else:
+        LOG.info('This language is not supported')
+        return False, link
+
+#caching stores' info
 def find_cached_stores(user_request: str, url, file_path):
     """
     Check store name existence in cache keys
@@ -124,121 +136,7 @@ def caching_stores_in_mall(file_path, url):
     os.chmod(caching_file, 777)
     LOG.info("Created mall's cache")
 
-def existing_lang_check(user_lang: str, url):
-    """
-    Check existence of user's language
-    on the mall web-page
-    Args:
-        user_lang (str): user's lang in ISO 639-1
-    Returns:
-        bool: True if lang exists
-    """
-    link = url+user_lang+'/directory/'
-    response = requests.get(link)
-    if response.status_code == 200:
-        LOG.info('This language is supported')
-        return True, link
-    else:
-        LOG.info('This language is not supported')
-        return False, link
-
-# time operations
-
-def change_format(time):
-    """
-    Changing format from 12h to 24h.
-    Returns:
-        formated_time (list): [int(hour), int(min)]
-    """
-    in_time = datetime.strptime(time, "%I:%M %p")
-    out_time = datetime.strftime(in_time, "%H:%M")
-    hour_min = out_time.split(':')
-    formated_time = [int(hour_min[0]), int(hour_min[1])]
-    return formated_time
-
-def time_refactoring(time_str):
-    """
-    Adding space detween time and am|pm.
-    If working time doesn't have mins add them.
-    Args:
-        time_str (list): store's work time
-    Returns:
-        open_time (list): open_h (int), open_m (int),
-        close_time (list): close_h (int), close_m (int),
-    """
-    if ':' not in time_str:
-        time_refactored = re.sub(r'(\d+)(am|pm)', '\g<1>:00 \g<2>', time_str)
-    else:
-        time_refactored = re.sub(r'(am|pm)', ' \g<1>', time_str)
-    new_format = change_format(time_refactored)
-    return new_format
-
-def left_lime_calculation(user_h, user_m, work_h, work_m):
-    if work_m < user_m:
-        wait_min = user_m - work_m
-    else:
-        wait_min = work_m - user_m
-    wait_h_opening = work_h - user_h
-    LOG.info(f'Hour difference {wait_h_opening}')
-    duration = wait_h_opening * 3600 + wait_min * 60
-    return duration
-
-#location operations
-
-def location_format(location):
-    """
-    Finds all digits in store's location and
-    formats them to numeral words.
-    Args:
-        location (str): location info
-        from stores info
-    Returns:
-        if digits were found:
-            pronounced (str): utterance with
-            pronounced digits
-        else:
-            location (str): not changed utterance
-    Examples:
-        'level 1' -> 'level one'
-    """
-    floor = re.findall(r'\d+', location)
-    if len(floor) > 0:
-        floor = floor[0]
-        num = pronounce_number(int(floor), ordinals=False)
-        pronounced = re.sub(r'\d+', num, location)
-        return pronounced
-    else:
-        return location
-
-def store_selection_by_floors(user_request, found_stores):
-    """
-    If there are several stores in found stores list
-    and user agrees to select store by floor.
-    Finds all digits in store's location and
-    formats them to ordinal and cardinal numerals.
-    Matches formated numerals with user's request.
-    If store was found appends it to the new found
-    list.
-    Args:
-        user_request (str): floor from user
-        found_stores (list): found stores on user's
-        request
-    Returns:
-        stores_by_floor (list): stores that was found by floor
-    """
-    stores_by_floor = []
-    for store in found_stores:
-        numbers = re.findall(r'\d+', store['location'])
-        if len(numbers) > 0:
-            numbers = numbers[0]
-            num = pronounce_number(int(numbers), ordinals=False)
-            num_ordinal = pronounce_number(int(numbers), ordinals=True)
-            if num in user_request or num_ordinal in user_request:
-                stores_by_floor.append(store)
-    return stores_by_floor
-
 # mall link parsing
-
 def parse(url):
     headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
