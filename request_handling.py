@@ -41,6 +41,7 @@ import os
 import json
 
 from datetime import datetime
+import pytz
 
 
 class RequestHandler():
@@ -141,25 +142,48 @@ def existing_lang_check(user_lang: str, url):
         LOG.info('This language is not supported')
         return False, link
 
-def curent_time_extraction():
-    """
-    Defines current time in utc timezone
-    Format: hour:minutes part of day (1:23 pm)
+# time operations
 
-    Returns:
-        day_time (list): contains splited time
-                            numerals and part of the day
-                            day_time -> ['07:19', 'am']
-        hour (int): current hour
-        min (int): current minute
+def change_format(time):
     """
-    now = datetime.now().time().strftime("%I:%M %p")
-    # now = datetime.today().strftime("%H:%M %p")
-    LOG.info(f'now {now}')
-    day_time = now.lower().split(' ')
-    exact_time = day_time[0].split(':')
-    hour, min = int(exact_time[0]), int(exact_time[1])
-    return day_time, hour, min
+    Changing format from 12h to 24h.
+    Returns:
+        formated_time (list): [int(hour), int(min)]
+    """
+    in_time = datetime.strptime(time, "%I:%M %p")
+    out_time = datetime.strftime(in_time, "%H:%M")
+    hour_min = out_time.split(':')
+    formated_time = [int(hour_min[0]), int(hour_min[1])]
+    return formated_time
+
+def time_refactoring(time_str):
+    """
+    Adding space detween time and am|pm.
+    If working time doesn't have mins add them.
+    Args:
+        time_str (list): store's work time
+    Returns:
+        open_time (list): open_h (int), open_m (int),
+        close_time (list): close_h (int), close_m (int),
+    """
+    if ':' not in time_str:
+        time_refactored = re.sub(r'(\d+)(am|pm)', '\g<1>:00 \g<2>', time_str)
+    else:
+        time_refactored = re.sub(r'(am|pm)', ' \g<1>', time_str)
+    new_format = change_format(time_refactored)
+    return new_format
+
+def left_lime_calculation(user_h, user_m, work_h, work_m):
+    if work_m < user_m:
+        wait_min = user_m - work_m
+    else:
+        wait_min = work_m - user_m
+    wait_h_opening = work_h - user_h
+    LOG.info(f'Hour difference {wait_h_opening}')
+    duration = wait_h_opening * 3600 + wait_min * 60
+    return duration
+
+#location operations
 
 def location_format(location):
     """
@@ -212,6 +236,8 @@ def store_selection_by_floors(user_request, found_stores):
             if num in user_request or num_ordinal in user_request:
                 stores_by_floor.append(store)
     return stores_by_floor
+
+# mall link parsing
 
 def parse(url):
     headers = {

@@ -28,13 +28,19 @@
 
 
 from neon_utils.skills.neon_skill import NeonSkill, LOG
+# from neon_utils.skills.kiosk_skill import KioskSkill
 from mycroft.skills.core import intent_file_handler
 from .request_handling import existing_lang_check, get_store_data, \
     store_selection_by_floors, \
     location_format, \
-    curent_time_extraction
+    left_lime_calculation, \
+    time_refactoring
+
 import re
 from lingua_franca.format import nice_duration
+
+from datetime import datetime
+import pytz
 
 
 class DirectorySkill(NeonSkill):
@@ -163,52 +169,73 @@ class DirectorySkill(NeonSkill):
             self.speak_dialog('no_store_on_level')
             self.speak_stores(store_info)
         return 3, None
+    
+    def stores_by_time_selection(self, store_info):
+        """
+        If user chose to select stores by time or
+        use like default selection. Gets user's
+        current time. Selects open stores.
+        Args:
+           store_info (list): found stores on user's
+                               request
+        Returns:
+            time_calculation function with True
+                in 'open' argument.
+            time_calculation function with False
+                in 'open' argument. (if list
+                of open stores is 0)
 
-    def open_stores_search(self, store_info, day_time, hour, min):
+        """
+        LOG.info(f"store by time selection {store_info}")
+        # user's time
+        now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%H:%M")
+        # splitting user's time on hour and mins
+        now_h_m = now.split(':')
+        LOG.info(f'users_time {now_h_m}')
+        now_h = int(now_h_m[0])
+        now_m = int(now_h_m[1])
+        # open stores search
+        open_stores = self.open_stores_search(store_info, now_h, now_m)
+        if len(open_stores) >= 1:
+            return self.time_calculation(open_stores, True, now_h, now_m)
+        else:
+            return self.time_calculation(store_info, False, now_h, now_m)
+
+    def open_stores_search(self, store_info, now_h, now_m):
         """
        Selects open stores. Collects the list of
        open stores else return empty list.
        Args:
            store_info (list): found stores on user's
                                request
+            now (str): current user's time
        Returns:
            store_info (list): open stores
        """
         open_stores = []
-        LOG.info(f'users_time {day_time, hour, min}')
+        LOG.info(f" user's current time {now_h, now_m}")
+
         for store in store_info:
-            formated_work_time = self.time_normalization(store['hours'])
-            LOG.info(f'formated_work_time {formated_work_time}')
-            if day_time[1] == 'am' and formated_work_time[0][0] <= hour:
-                if formated_work_time[0][1] > min:
+            # formating store's work hours 
+            time_splited = store['hours'].split(' – ')
+            open = time_refactoring(time_splited[0])
+            close = time_refactoring(time_splited[1])
+            LOG.info(f'formated_work_time {open, close}')
+
+            if now_h == open[0]:
+                if now_m >= open[1]:
                     open_stores.append(store)
-            elif day_time[1] == 'pm' and formated_work_time[1][0] == hour:
-                if formated_work_time[1][1] > min:
+            elif now_h > open[0]:
+                open_stores.append(store)
+            elif now_h == close[0]:
+                if now_m < close[1]:
                     open_stores.append(store)
-            elif day_time[1] == 'pm' and formated_work_time[1][0] > hour:
+            elif now_h < close[0]:
                 open_stores.append(store)
         LOG.info(f'open stores {open_stores}')            
         return open_stores
 
-    def time_normalization(self, work_time):
-        parse_time = re.findall(r'(\d+\:*\d*)+', work_time)
-
-        open_hour_mins = re.findall(r'(\d+)', parse_time[0])
-        open_hour = int(open_hour_mins[0])
-        if len(open_hour_mins) > 1:
-            open_minutes = int(open_hour_mins[1])
-        else: 
-            open_minutes = 0
-
-        close_hour_mins = re.findall(r'(\d+)', parse_time[1])
-        close_hour = int(close_hour_mins[0])
-        if len(close_hour_mins) > 1:
-            close_minutes = int(close_hour_mins[1])
-        else: 
-            close_minutes = 0
-        return ([open_hour, open_minutes], [close_hour, close_minutes])
-
-    def time_calculation(self, store_info, open, day_time, hour, min):
+    def time_calculation(self, store_info, open, now_h, now_m):
         """
         Calculates time difference between user's current time
         and store working hours.
@@ -230,9 +257,8 @@ class DirectorySkill(NeonSkill):
         Args:
             store_info (list): found stores on user's request
             open (boolean): True - if store is open
-            day_time (str): user's current day time (am|pm)
-            hour (int): user's current hour
-            min (int): user's current minute
+            now_h (int): user's current hour
+            now_m (int): user's current minute
         Returns:
             3, None (to ask for another store info)
         Examples:
@@ -241,30 +267,19 @@ class DirectorySkill(NeonSkill):
             Prompt: 'store is closed now. Opens in 1 hour'
         """
         for store in store_info:
-            work_time = store['hours']
+            work_time = store['hours'].split(' – ')
             store_name = store['name']
-            LOG.info(f'Store work time  {work_time}')
-            normalized_time = self.time_normalization(work_time)
-            LOG.info(f'Normalixed time {normalized_time}')
-            # time left
-            wait_h_opening = normalized_time[0][0] - hour
-            wait_min_opening = normalized_time[0][1] - min 
 
-            wait_h_closing = normalized_time[1][0] - hour
-            wait_min_closing = normalized_time[1][1] - min
-            LOG.info(f'wait_h_closing {wait_h_closing}')
-            LOG.info(f'wait_min_closing {wait_min_closing}')
-            LOG.info(f'day_time {day_time[1]}')
+            LOG.info(f'Store work time  {work_time}')
+            open_time = time_refactoring(work_time[0])
+            close_time = time_refactoring(work_time[1])
+            LOG.info(f'Normalixed time {open_time, close_time}')
+
             if open:
                 duration = None
-                if day_time[1] == 'pm':
-                    if 0 == wait_h_closing and wait_min_closing > 0:
-                        duration = wait_min_closing * 60
-                    elif wait_h_closing == 1 and wait_min_closing < 0:
-                        wait_min_closing = 60 - min
-                        duration = wait_min_closing * 60
-                    elif wait_h_closing == 1 and wait_min_closing == 0:
-                        duration = 60 * 60
+                if 0 <= (close_time[0] - now_h) <= 1:
+                    LOG.info(f'hour waiting {close_time[0] - now_h}')
+                    duration = left_lime_calculation(now_h, now_m, close_time[0], close_time[1])
                 if duration:
                     formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
                     LOG.info(f'{store_name} closes in {formated_duration}.')
@@ -275,8 +290,8 @@ class DirectorySkill(NeonSkill):
                 self.speak_stores([store])
             else:
                 LOG.info(f'{store_name} is closed.')
-                if day_time[1] == 'am':
-                    duration = wait_h_opening * 3600 + wait_min_opening * 60
+                if (close_time[0] - now_h) >= 0:
+                    duration = left_lime_calculation(now_h, now_m, close_time[1], close_time[0])
                     formated_duration = nice_duration(duration, lang=str(self.request_lang), speech=True)
                     LOG.info(f'{store_name} is closed now. store opens in {formated_duration}')
                     self.speak_dialog('waiting_for_opening', {"store_name": store_name, 'duration': formated_duration})
@@ -287,31 +302,6 @@ class DirectorySkill(NeonSkill):
                     self.speak_dialog('closed_now', {'store_name': store_name, 'open_time': open_time})
                 self.speak_stores([store])
         return 3, None
-
-    def stores_by_time_selection(self, store_info):
-        """
-        If user chose to select stores by time or
-        use like default selection. Gets user's
-        current time. Selects open stores.
-        Args:
-           store_info (list): found stores on user's
-                               request
-        Returns:
-            time_calculation function with True
-                in 'open' argument.
-            time_calculation function with False
-                in 'open' argument. (if list
-                of open stores is 0)
-
-        """
-        LOG.info(f"store by time selection {store_info}")
-        day_time, hour, min = curent_time_extraction()
-        #day_time, hour, min = ['10:55', 'pm'], 10, 55
-        open_stores = self.open_stores_search(store_info, day_time, hour, min)
-        if len(open_stores) >= 1:
-            return self.time_calculation(open_stores, True, day_time, hour, min)
-        else:
-            return self.time_calculation(store_info, False, day_time, hour, min)
 
     def find_store(self, user_request, mall_link):
         """
