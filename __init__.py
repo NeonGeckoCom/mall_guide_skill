@@ -28,7 +28,7 @@
 
 
 from neon_utils.skills.neon_skill import NeonSkill, LOG
-# from neon_utils.skills.kiosk_skill import KioskSkill
+from neon_utils.skills.kiosk_skill import KioskSkill
 from mycroft.skills.core import intent_file_handler
 from .request_handling import existing_lang_check, get_store_data
 
@@ -46,7 +46,7 @@ from datetime import datetime
 import pytz
 
 
-class DirectorySkill(NeonSkill):
+class DirectorySkill(KioskSkill):
 
     def __init__(self):
         super(DirectorySkill, self).__init__(name="DirectorySkill")
