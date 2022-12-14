@@ -55,12 +55,12 @@ class TestSkill(unittest.TestCase):
         cls.test_fs = join(dirname(__file__), "skill")
         if not exists(cls.test_fs):
             mkdir(cls.test_fs)
-
+        
         # Override the configuration and fs paths to use the test directory
         cls.skill.settings_write_path = cls.test_fs
         cls.skill.file_system.path = cls.test_fs
         cls.skill._init_settings()
-        cls.skill.initialize()
+        # cls.skill.initialize()
 
         # Override speak and speak_dialog to test passed arguments
         cls.skill.speak = Mock()
@@ -98,13 +98,7 @@ class TestSkill(unittest.TestCase):
     def test_en_skill_init(self):
 
         self.skill.ask_yesno = Mock(return_value="yes")
-        self.skill._start_mall_parser_prompt(
-            Message('test', {'utterance': 'find ABC stores',
-                             'store': 'ABC stores',
-                             'lang': 'en-us'},
-                    {'context_key': 'MallParsing'})
-        )
-
+        
         message = Message('test', {'utterance': 'find ABC stores',
                                    'store': 'ABC stores',
                                    'lang': 'en-us'},

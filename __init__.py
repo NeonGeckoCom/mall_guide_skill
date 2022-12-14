@@ -27,8 +27,11 @@
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from neon_utils.skills.neon_skill import NeonSkill, LOG
+from neon_utils.skills.neon_skill import LOG
 from neon_utils.skills.kiosk_skill import KioskSkill
+
+from time import time
+
 from mycroft.skills.core import intent_file_handler
 from .request_handling import existing_lang_check, get_store_data
 
@@ -57,21 +60,102 @@ class DirectorySkill(KioskSkill):
     def request_lang(self):
         return self.lang.split('-')[0]
 
-    def initialize(self):
-        # When first run or prompt not dismissed, wait for load and prompt user
-        if self.settings.get('prompt_on_start'):
-            self.bus.once('mycroft.ready', self._start_mall_parser_prompt)
-
-    @intent_file_handler("run_mall_parser.intent")
-    def start_mall_parser_intent(self, message):
-        LOG.info(message.data)
-        self._start_mall_parser_prompt(message)
-        return
-
-    # @property
+    @property
     def mall_link(self):
         mall_link = 'https://www.alamoanacenter.com/'
         return self.settings.get("mall_link") or mall_link
+
+    @property
+    def timeout_seconds(self) -> int:
+        """
+        Time in seconds to wait for a user response before timing out
+        """
+        return 60
+
+    @property
+    def greeting_dialog(self) -> str:
+        """
+        Specify a dialog to speak on interaction start
+        """
+        return 'greeting'
+
+    @property
+    def goodbye_dialog(self) -> str:
+        """
+        Specify a dialog to speak when an interaction ends cleanly
+        """
+        return 'goodbye'
+
+    @property
+    def timeout_dialog(self) -> str:
+        """
+        Specify a dialog to speak when an interaction ends after some timeout
+        """
+        return 'timeout'
+
+    @property
+    def error_dialog(self) -> str:
+        """
+        Specify a dialog to speak on unhandled errors
+        """
+        return 'unexpected_error'
+
+    def setup_new_interaction(self, message) -> bool:
+        """
+        Override to include skill-specific actions on first user interaction.
+        This is the first action that could prompt user to input language, etc.
+        :param message: Message associated with start request
+        :returns: True if user interaction is supported
+        """
+        if message:
+            return True
+
+    def handle_new_interaction(self, message):
+        """
+        Override to interact with the user after the greeting message has been
+        spoken.
+        :param message: Message associated with start request
+        """
+        self.converse(message)
+
+    def handle_end_interaction(self, message):
+        """
+        Override to do any skill-specific cleanup when a user interaction is
+        completed.
+        :param message: Message associated with request triggering end
+        """
+        self.speak_dialog(self.goodbye_dialog)
+
+    def handle_user_utterance(self, message):
+        """
+        Handle any input from a user interacting with the kiosk.
+        :param message: Message associated with user utterance
+        """
+        user_request, mall_link = self.user_request_handling(message)
+        if user_request and mall_link:
+            LOG.info(mall_link)
+            if self.execute(user_request, mall_link) is not None:
+                LOG.info('executed')
+                return
+            else:
+                self.handle_end_interaction(message)
+        else:
+            self.handle_end_interaction(message)
+
+    # def initialize(self):
+    #     # When first run or prompt not dismissed, wait for load and prompt user
+    #     if self.settings.get('prompt_on_start'):
+    #         self.bus.once('mycroft.ready', self._start_mall_parser_prompt)
+
+    # @intent_file_handler("run_mall_parser.intent")
+    # def start_mall_parser_intent(self, message):
+    #     LOG.info(message.data)
+    #     self._start_mall_parser_prompt(message)
+    #     return
+
+    @intent_file_handler("start_mall_directory")
+    def start_interaction(self, message):
+        super().start_interaction(message)
 
     def user_request_handling(self, message):
         """
@@ -88,12 +172,12 @@ class DirectorySkill(KioskSkill):
             return None, None
         else:
             user_request = message.data['store']
-            LOG.info(f"{self.mall_link()}")
+            LOG.info(f"{self.mall_link}")
             LOG.info(str(self.request_lang))
             LOG.info(user_request)
-            found, link = existing_lang_check(self.request_lang, self.mall_link())
+            found, link = existing_lang_check(self.request_lang, self.mall_link)
             if found:
-                link = self.mall_link() + self.request_lang + '/directory/'
+                link = self.mall_link + self.request_lang + '/directory/'
                 LOG.info('new link: ' + link)
                 return user_request, link
             else:
@@ -124,6 +208,7 @@ class DirectorySkill(KioskSkill):
         elif start_again == "no":
             self.speak_dialog('no_store_request')
         else:
+            
             self.speak_dialog('unexpected_error')
         return None
 
@@ -354,24 +439,24 @@ class DirectorySkill(KioskSkill):
         else:
             return None
 
-    def _start_mall_parser_prompt(self, message):
-        if self.neon_in_request(message):
-            LOG.info('Prompting Mall parsing start')
-            self.make_active()
-            if message is not None:
-                LOG.info('new message' + str(message))
-                user_request, mall_link = self.user_request_handling(message)
-                LOG.info(mall_link)
-                if user_request is not None:
-                    if self.execute(user_request, mall_link) is not None:
-                        LOG.info('executed')
-                        return
-                    else:
-                        self.speak_dialog('finished')
-            else:
-                self.speak_dialog('finished')
-        else:
-            return
+    # def _start_mall_parser_prompt(self, message):
+    #     if self.neon_in_request(message):
+    #         LOG.info('Prompting Mall parsing start')
+    #         self.make_active()
+    #         if message is not None:
+    #             LOG.info('new message' + str(message))
+    #             user_request, mall_link = self.user_request_handling(message)
+    #             LOG.info(mall_link)
+    #             if user_request is not None:
+    #                 if self.execute(user_request, mall_link) is not None:
+    #                     LOG.info('executed')
+    #                     return
+    #                 else:
+    #                     self.speak_dialog('finished')
+    #         else:
+    #             self.speak_dialog('finished')
+    #     else:
+    #         return
 
 
 def create_skill():
