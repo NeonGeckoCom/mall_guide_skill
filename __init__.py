@@ -31,6 +31,7 @@ from neon_utils.skills.neon_skill import LOG
 from neon_utils.skills.kiosk_skill import KioskSkill
 
 from time import time
+from neon_utils.message_utils import get_message_user
 
 from mycroft.skills.core import intent_file_handler
 from .request_handling import existing_lang_check, get_store_data
@@ -131,7 +132,8 @@ class DirectorySkill(KioskSkill):
         Handle any input from a user interacting with the kiosk.
         :param message: Message associated with user utterance
         """
-        user_request, mall_link = self.user_request_handling(message)
+        answer = self.get_response('how_can_i_help_you')
+        user_request, mall_link = self.user_request_handling(message, answer)
         if user_request and mall_link:
             LOG.info(mall_link)
             if self.execute(user_request, mall_link) is not None:
@@ -142,22 +144,32 @@ class DirectorySkill(KioskSkill):
         else:
             self.handle_end_interaction(message)
 
-    # def initialize(self):
-    #     # When first run or prompt not dismissed, wait for load and prompt user
-    #     if self.settings.get('prompt_on_start'):
-    #         self.bus.once('mycroft.ready', self._start_mall_parser_prompt)
-
-    # @intent_file_handler("run_mall_parser.intent")
-    # def start_mall_parser_intent(self, message):
-    #     LOG.info(message.data)
-    #     self._start_mall_parser_prompt(message)
-    #     return
-
     @intent_file_handler("start_mall_directory")
     def start_interaction(self, message):
         super().start_interaction(message)
 
-    def user_request_handling(self, message):
+    def _extract_store_name(self, utt: str):
+        """
+        Patch the regex bug and try extracting a store name from the utterance
+        :param utt: string utterance
+        :return: extracted store name string if found in utterance
+        """
+        rx_file = self.find_resource('store.rx', 'regex')
+        if rx_file and utt:
+            with open(rx_file) as f:
+                for pat in f.readlines():
+                    pat = pat.strip()
+                    LOG.info(f"Regex pattern: {pat}")
+                    res = re.sub(pat, '\\4', str(utt))
+                    LOG.info(f"Matched store {res}")
+                    if res:
+                        try:
+                            return res
+                        except IndexError:
+                            pass
+        return None
+
+    def user_request_handling(self, message, answer):
         """
         Checks user language existence on mall's web-page
         using existing_lang_check() function.
@@ -168,10 +180,15 @@ class DirectorySkill(KioskSkill):
             answer)
         """
         LOG.info(f"Message is {message.data}")
-        if message.data == {} or message is None:
+        LOG.info(f"User's greeting answer {answer}")
+        # extracting store name from user's answer on greeting prompt
+        user_request = self._extract_store_name(answer)
+        LOG.info(f"Store in request {user_request}")
+
+        if not user_request:
+            self.speak('store_not_found')
             return None, None
         else:
-            user_request = message.data['store']
             LOG.info(f"{self.mall_link}")
             LOG.info(str(self.request_lang))
             LOG.info(user_request)
@@ -438,26 +455,6 @@ class DirectorySkill(KioskSkill):
             self.execute(user_request, mall_link)
         else:
             return None
-
-    # def _start_mall_parser_prompt(self, message):
-    #     if self.neon_in_request(message):
-    #         LOG.info('Prompting Mall parsing start')
-    #         self.make_active()
-    #         if message is not None:
-    #             LOG.info('new message' + str(message))
-    #             user_request, mall_link = self.user_request_handling(message)
-    #             LOG.info(mall_link)
-    #             if user_request is not None:
-    #                 if self.execute(user_request, mall_link) is not None:
-    #                     LOG.info('executed')
-    #                     return
-    #                 else:
-    #                     self.speak_dialog('finished')
-    #         else:
-    #             self.speak_dialog('finished')
-    #     else:
-    #         return
-
 
 def create_skill():
     return DirectorySkill()

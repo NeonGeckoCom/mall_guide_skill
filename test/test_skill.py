@@ -103,7 +103,8 @@ class TestSkill(unittest.TestCase):
                                    'store': 'ABC stores',
                                    'lang': 'en-us'},
                           {'context_key': 'MallParsing'})
-        self.skill.user_request_handling(message)
+        answer = 'where is abc stores'
+        self.skill.user_request_handling(message, answer)
 
 
     def test_en_time_calculation(self):
