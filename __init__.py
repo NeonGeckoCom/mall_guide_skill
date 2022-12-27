@@ -119,14 +119,6 @@ class DirectorySkill(KioskSkill):
         """
         self.converse(message)
 
-    def handle_end_interaction(self, message):
-        """
-        Override to do any skill-specific cleanup when a user interaction is
-        completed.
-        :param message: Message associated with request triggering end
-        """
-        self.speak_dialog(self.goodbye_dialog)
-
     def handle_user_utterance(self, message):
         """
         Handle any input from a user interacting with the kiosk.
@@ -140,9 +132,9 @@ class DirectorySkill(KioskSkill):
                 LOG.info('executed')
                 return
             else:
-                self.handle_end_interaction(message)
+                self.end_interaction(message)
         else:
-            self.handle_end_interaction(message)
+            self.end_interaction(message)
 
     @intent_file_handler("start_mall_directory")
     def start_interaction(self, message):
