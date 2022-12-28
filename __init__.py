@@ -117,14 +117,17 @@ class DirectorySkill(KioskSkill):
         spoken.
         :param message: Message associated with start request
         """
-        self.converse(message)
+        self.speak_dialog('how_can_i_help_you')
+        #self.converse(message)
 
     def handle_user_utterance(self, message):
         """
         Handle any input from a user interacting with the kiosk.
         :param message: Message associated with user utterance
         """
-        answer = self.get_response('how_can_i_help_you')
+        #answer = self.get_response('how_can_i_help_you')
+        #user_request, mall_link = self.user_request_handling(message, answer)
+        answer = message.data['utterances']
         user_request, mall_link = self.user_request_handling(message, answer)
         if user_request and mall_link:
             LOG.info(mall_link)
