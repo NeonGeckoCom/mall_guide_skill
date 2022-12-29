@@ -35,8 +35,10 @@ from mock import Mock
 from ovos_utils.messagebus import FakeBus
 
 from mycroft.skills.skill_loader import SkillLoader
-
 from mycroft_bus_client import Message
+
+import lingua_franca
+lingua_franca.load_language('en')
 
 
 class TestSkill(unittest.TestCase):
@@ -53,66 +55,78 @@ class TestSkill(unittest.TestCase):
         cls.test_fs = join(dirname(__file__), "skill")
         if not exists(cls.test_fs):
             mkdir(cls.test_fs)
-
+        
         # Override the configuration and fs paths to use the test directory
         cls.skill.settings_write_path = cls.test_fs
         cls.skill.file_system.path = cls.test_fs
         cls.skill._init_settings()
-        cls.skill.initialize()
+        # cls.skill.initialize()
 
         # Override speak and speak_dialog to test passed arguments
         cls.skill.speak = Mock()
         cls.skill.speak_dialog = Mock()
-
-        # TODO: Put any skill method overrides here
+        
 
     def setUp(self):
+
+        class MockGui:
+            def __init__(self):
+                self._data = dict()
+                self.show_image = Mock()
+
+            def __setitem__(self, key, value):
+                self._data[key] = value
+
+            def __getitem__(self, item):
+                return self._data[item]
+
+            @staticmethod
+            def clear():
+                pass  
+        
         self.skill.speak.reset_mock()
         self.skill.speak_dialog.reset_mock()
 
-        # TODO: Put any cleanup here that runs before each test case
+        mock_gui = MockGui()
+        self.skill.gui = mock_gui
+
 
     @classmethod
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.test_fs)
 
     def test_en_skill_init(self):
+
         self.skill.ask_yesno = Mock(return_value="yes")
-        self.skill.gui._pages2uri = Mock()
-        self.skill._start_mall_parser_prompt(
-            Message('test', {'utterance': 'find ABC stores',
-                                   'shop': 'ABC stores',
-                                   'lang': 'en-us'},
-                          {'context_key': 'MallParsing'})
-        )
-                            
+        
         message = Message('test', {'utterance': 'find ABC stores',
-                                   'shop': 'ABC stores',
+                                   'store': 'ABC stores',
                                    'lang': 'en-us'},
                           {'context_key': 'MallParsing'})
-        self.skill.user_request_handling(message)
+        answer = 'where is abc stores'
+        self.skill.user_request_handling(message, answer)
 
-    def test_en_time_extraction(self):
-        shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
-                        {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
-        day_time, hour, min = ['10:15', 'am'], 10, 15
-        result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
-        self.assertEqual(shop_info, result_shops)
 
-        day_time, hour, min = ['9:15', 'am'], 9, 15
-        result_shops = self.skill.open_shops_search(shop_info, day_time, hour, min)
-        self.assertEqual(shop_info[0], result_shops[0])
+    def test_en_time_calculation(self):
+        store_info = [{'name': 'ABC Stores', 'hours': '9:30am – 9pm', 'location': 'Street Level 1, near Centerstage',
+                      'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'},
+                     {'name': 'ABC Stores', 'hours': '10:30am – 8:30pm', 'location': 'Street Level 1, in the Ewa Wing',
+                      'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
 
-    # def test_en_time_extraction(self):
-    #     shop_info = [{'name': 'ABC Stores', 'hours': '9am – 9pm', 'location': 'Street Level 1, near Centerstage', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'}, 
-    #                     {'name': 'ABC Stores', 'hours': '10am – 8pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'},
-    #                     {'name': 'ABC Stores', 'hours': '10am – 9pm', 'location': 'Street Level 1, in the Ewa Wing', 'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
+        now_hour, now_min = 9, 30
+        open = True
 
-    #     day_time, hour, min = ['9:15', 'pm'], 9, 15
-    #     print(self.skill.time_calculation(shop_info, False, day_time, hour, min))
+        result = self.skill.time_calculation(store_info, open, now_hour, now_min)
+        self.assertEqual(result, (3, None))
 
-        # day_time, hour, min = ['8:15', 'pm'], 8, 15
-        # print(self.skill.time_calculation(shop_info, False, day_time, hour, min))
+    def test_en_stores_by_time_selection(self):
+        store_info = [{'name': 'ABC Stores', 'hours': '9:30am – 9pm', 'location': 'Street Level 1, near Centerstage',
+                      'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937914061-abcstores.png'},
+                     {'name': 'ABC Stores', 'hours': '10:30am – 8:30pm', 'location': 'Street Level 1, in the Ewa Wing',
+                      'logo': 'https://gizmostorageprod.blob.core.windows.net/tenant-logos/1615937946329-abcstores.png'}]
+
+        result = self.skill.stores_by_time_selection(store_info)
+        self.assertEqual(result, (3, None))
 
 
 if __name__ == '__main__':

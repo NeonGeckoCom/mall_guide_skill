@@ -1,8 +1,8 @@
-where (is|are|can i find) {shop}
-where (is|are) {shop} located
-i am looking for {shop}
-location of {shop}
-where {shop}
-show {shop}
-show me {shop}
-find {shop}
+where (is|are|can i find) {store}
+where (is|are) {store} located
+i am looking for {store}
+location of {store}
+where {store}
+show {store}
+show me {store}
+find {store}
