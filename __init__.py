@@ -124,7 +124,7 @@ class DirectorySkill(KioskSkill):
         Handle any input from a user interacting with the kiosk.
         :param message: Message associated with user utterance
         """
-        answer = message.data['utterances']
+        answer = message.data['utterances'][0]
         user_request, mall_link = self.user_request_handling(message, answer)
         if user_request and mall_link:
             LOG.info(mall_link)
